@@ -1,0 +1,78 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+venv/
+ENV/
+env/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Results (keep structure, ignore generated content)
+results/figures/*
+results/models/*
+results/logs/*
+results/tables/*
+results/checkpoints/*
+!results/figures/.gitkeep
+!results/models/.gitkeep
+!results/logs/.gitkeep
+!results/tables/.gitkeep
+!results/checkpoints/.gitkeep
+
+# Data (large binary/data files — not tracked)
+data/raw/*
+data/processed/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+*.csv
+*.h5
+*.hdf5
+*.joblib
+*.pkl
+*.pickle
+
+# Generated figures inside source directories
+experiments/*.png
+experiments/*.pdf
+
+# Compiled and binary model weights
+*.pt
+*.pth
+
+# Logs
+*.log
+
+# Manuscript (tracked separately)
+manuscript/
+
+# OS
+Thumbs.db
