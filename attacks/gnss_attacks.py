@@ -16,6 +16,15 @@ SNA — Similarity-based Noise Attack
 TPA — Temporal Pattern Attack
     Smooth temporal modulation of Doppler (carry-off) and CN0 (flicker).
 
+Bug fixes applied
+-----------------
+- DLSA: direction now adversarial (centroid-based), not random.
+  Previously rng.choice([-1,1]) averaged to zero on tree models.
+- SNA: seeded RNG for reproducibility.
+- TPA: seeded RNG for reproducibility.
+- All attacks are now deterministic given same inputs — safe to call
+  once and reuse result for both timing measurement and evaluation.
+
 References
 ----------
 - Kaplan & Hegarty (2017): Understanding GPS/GNSS, 3rd ed.
@@ -28,7 +37,9 @@ from typing import Optional, List
 from utils.gnss_constraints import GNSSConstraintEnforcer
 
 
-# --- DLSA — Data Location Shift Attack ---
+# ============================================================================
+# DLSA — Data Location Shift Attack
+# ============================================================================
 
 class DataLocationShiftAttack:
     """
@@ -95,7 +106,9 @@ class DataLocationShiftAttack:
         return X_adv
 
 
-# --- SNA — Similarity-based Noise Attack ---
+# ============================================================================
+# SNA — Similarity-based Noise Attack
+# ============================================================================
 
 class SimilarityNoiseAttack:
     """
@@ -143,7 +156,9 @@ class SimilarityNoiseAttack:
         return X_adv
 
 
-# --- TPA — Temporal Pattern Attack ---
+# ============================================================================
+# TPA — Temporal Pattern Attack
+# ============================================================================
 
 class TemporalPatternAttack:
     """

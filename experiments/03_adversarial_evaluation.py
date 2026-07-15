@@ -84,7 +84,7 @@ DL_REGISTRY = {
 #   LogisticRegression — degenerate baseline (clean recall 0.37)
 #   SVM_RBF            — inference 1438 µs/sample, infeasible for real-time GNSS
 SELECTED_MODELS = {
-    'RandomForest':     'RandomForest_SMOTE',
+    'RandomForest':     'RandomForest_default',
     'XGBoost':          'XGBoost_default',
     'LightGBM':         'LightGBM_default',
     'GradientBoosting': 'GradientBoosting',

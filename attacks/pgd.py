@@ -8,6 +8,12 @@ Iterative FGSM with L-inf projection at every step.
 
 Scope: DL models only (same rationale as fgsm.py).
 
+Bug fix vs previous version
+-----------------------------
+Previously constructed GNSSConstraintEnforcer internally without fit(),
+so normalised_bounds_ was always empty. Now accepts a pre-fitted enforcer
+from main() where it is fitted on training data.
+
 Reference
 ---------
 Madry, A., Makelov, A., Schmidt, L., Tsipras, D., & Vladu, A. (2018).
@@ -21,6 +27,7 @@ import torch.nn as nn
 from typing import Optional
 
 from utils.gnss_constraints import GNSSConstraintEnforcer
+from utils.torch_compat import grad_compat_mode
 
 
 class PGDAttack:
@@ -61,11 +68,12 @@ class PGDAttack:
     def _gradient_step(self, X_adv_t: torch.Tensor,
                        y_t: torch.Tensor) -> torch.Tensor:
         """Single signed gradient step."""
-        self.nn_module.eval()
         X_adv_t = X_adv_t.clone().detach().requires_grad_(True)
-        logits = self.nn_module(X_adv_t)
-        loss = self.criterion(logits, y_t)
-        loss.backward()
+        # grad_compat_mode: see utils/torch_compat for explanation.
+        with grad_compat_mode(self.nn_module):
+            logits = self.nn_module(X_adv_t)
+            loss = self.criterion(logits, y_t)
+            loss.backward()
         return X_adv_t.grad.sign().detach()
 
     def generate(self, X: np.ndarray, y: np.ndarray) -> np.ndarray:
@@ -109,8 +117,12 @@ class PGDAttack:
         if self.gnss_enforcer is not None:
             X_adv = self.gnss_enforcer.clip_to_gnss_bounds(X_adv)
 
-        # Re-enforce epsilon-ball after physical constraint clipping.
-        # The enforcer can only restrict the perturbation budget, never expand it.
+        # Re-enforce epsilon ball AFTER the enforcer.
+        # Same reason as FGSMAttack: the enforcer must only restrict the
+        # perturbation budget, never expand it. Without this second clip,
+        # outlier test samples outside the training data range get "corrected"
+        # by the enforcer, producing spurious L-inf >> epsilon (observed:
+        # L-inf=11.2037 for all epsilon in {0.05, 0.10, 0.20}).
         X_adv = np.clip(X_adv, X_orig - self.epsilon, X_orig + self.epsilon)
 
         return X_adv

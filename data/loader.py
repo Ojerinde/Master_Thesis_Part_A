@@ -5,7 +5,7 @@ Robust data loading with validation, caching, and error handling.
 """
 
 from config.paths import (
-    TEXBAT_CSV, PROCESSED_DATA_DIR,
+    TEXBAT_CSV, TEXBAT_TRACK_CSV, PROCESSED_DATA_DIR,
     TRAIN_DATA_PATH, TEST_DATA_PATH, VAL_DATA_PATH
 )
 import pandas as pd
@@ -14,6 +14,13 @@ import pickle
 import json
 from typing import Tuple, Optional
 import warnings
+
+# Cosmetic: models are fit on named DataFrames but predicted on NumPy arrays
+# (columns are in the same fixed order, so results are identical). Silence the
+# sklearn "X does not have valid feature names" nag so run logs stay readable.
+# Imported by every experiment, so this registers process-wide before predict().
+warnings.filterwarnings(
+    "ignore", message=".*does not have valid feature names.*")
 
 
 class TEXBATLoader:
@@ -281,6 +288,146 @@ def load_texbat(verbose=True, validate=True):
     if validate:
         df, _ = loader.validate_data(df)
     return df, loader
+
+
+# ============================================================================
+# FGI-GSRx TRACK-ONLY CORPUS (Paper 1 rebuild)
+# ============================================================================
+# Physical receiver observables ONLY. Metadata/time/identity columns
+# (scenario, source_file, spoof_type, prn, epoch_idx, t_sec, segment, label,
+# label_name) are deliberately EXCLUDED from the feature set: t_sec/epoch_idx
+# encode the spoof onset and prn/scenario encode recording identity, so using
+# them would reproduce the WP2 timestamp/recording leakage. Also excluded are
+# fll_filter (FLL loop-filter output; NaN in steady-state fine tracking) and the
+# ALGEBRAICALLY DERIVED observables, which would make feature-space adversarial
+# attacks physically UNREALIZABLE if perturbed independently of their parents
+# (verified on the corpus, 2026-07-09):
+#     carr_freq_hz     == doppler_hz              (identical; std of diff = 0.0)
+#     prompt_power     == i_prompt^2 + q_prompt^2 (exact)
+#     prompt_phase_rad == atan2(q_prompt, i_prompt) (exact)
+# The instantaneous correlator state is kept as (i_prompt, q_prompt); the residual
+# SOFT coupling C/N0 ~ f(I/Q power) is enforced physically by the
+# GNSSConstraintEnforcer during attacks. Only these 9 physically INDEPENDENT
+# signal-domain observables may be fed to a detector. See memory iq-feature-coupling.
+TEXBAT_TRACK_FEATURES = [
+    'cn0_dbhz', 'mean_cn0_dbhz', 'noise_cn0', 'doppler_hz',
+    'i_prompt', 'q_prompt',
+    'dll_discr', 'pll_lock', 'fll_lock',
+]
+
+
+def load_texbat_track(verbose=True, validate=True, scenarios=None):
+    """
+    Load the FGI-GSRx track-only observable corpus (Paper 1 rebuild).
+
+    Produced by fgi/export_texbat_track.m from raw TEXBAT tracked through the
+    FGI-GSRx software receiver. Labels: 0=genuine, 1=counterfeit, from the
+    within-recording spoofing onset (no recording-identity confound).
+
+    Args:
+        verbose   : print progress
+        validate  : drop rows with NaN/Inf features or out-of-range C/N0
+        scenarios : optional list to keep (e.g. ['cleanstatic','ds2','ds3','ds7'])
+
+    Returns:
+        df            : DataFrame (feature columns + metadata columns retained)
+        feature_names : the 9 physically-independent observable columns (TEXBAT_TRACK_FEATURES)
+    """
+    if not TEXBAT_TRACK_CSV.exists():
+        raise FileNotFoundError(
+            f"TEXBAT track corpus not found: {TEXBAT_TRACK_CSV}\n"
+            f"   Generate it with fgi/export_texbat_track.m after tracking the "
+            f"TEXBAT scenarios in FGI-GSRx."
+        )
+
+    df = pd.read_csv(TEXBAT_TRACK_CSV)
+    if verbose:
+        print(f"Loaded {len(df):,} rows x {df.shape[1]} cols from {TEXBAT_TRACK_CSV.name}")
+
+    if scenarios is not None:
+        df = df[df['scenario'].isin(scenarios)].reset_index(drop=True)
+        if verbose:
+            print(f"  filtered to scenarios {scenarios}: {len(df):,} rows")
+
+    if 'label' not in df.columns:
+        raise ValueError("No 'label' column in TEXBAT track corpus")
+    missing = [c for c in TEXBAT_TRACK_FEATURES if c not in df.columns]
+    if missing:
+        raise ValueError(f"Corpus missing expected feature columns: {missing}")
+
+    if validate:
+        n0 = len(df)
+        feat = df[TEXBAT_TRACK_FEATURES]
+        bad = feat.isnull().any(axis=1)
+        bad = bad | np.isinf(feat.to_numpy(dtype=float)).any(axis=1)
+        bad = bad | (df['cn0_dbhz'] <= 0) | (df['cn0_dbhz'] > 70)   # dB-Hz physical range
+        if bad.sum() > 0:
+            df = df[~bad].reset_index(drop=True)
+        if verbose:
+            print(f"  validation: {len(df):,} rows retained "
+                  f"({n0 - len(df):,} removed for NaN/Inf/C-N0 out of range)")
+
+    if verbose:
+        vc = df['label'].value_counts().to_dict()
+        print(f"  labels: genuine(0)={vc.get(0, 0):,}  spoof(1)={vc.get(1, 0):,}")
+        print(f"  scenarios: {sorted(df['scenario'].unique().tolist())}")
+        print(f"  features ({len(TEXBAT_TRACK_FEATURES)}): {TEXBAT_TRACK_FEATURES}")
+
+    return df, TEXBAT_TRACK_FEATURES
+
+
+def load_track_splits(scenarios=None, train_frac=0.70, val_frac=0.10,
+                      purge=20, verbose=False):
+    """Leakage-free, block-temporal train/val/test split of the FGI corpus,
+    shared by every experiment script so the partition is identical everywhere.
+
+    A RANDOM split of per-epoch tracking data LEAKS: adjacent epochs of the same
+    PRN are near-identical (loop time constants ~0.1-1 s), so shuffling scatters
+    almost-duplicate rows across train and test and inflates every metric. The
+    standard remedy for autocorrelated series is a block-temporal split with
+    purging (cf. time-series CV; Lopez de Prado purging). Here each contiguous run
+    -- one (scenario, prn, segment) group ordered by t_sec -- is cut into
+    CONTIGUOUS blocks: first `train_frac` -> train, next `val_frac` -> val,
+    remainder -> test, DROPPING `purge` epochs (~1 s at the 20 Hz export cadence)
+    at each block boundary to break short-range autocorrelation. Every scenario /
+    PRN / class appears in all three splits, so the partition is representative
+    without leaking. Fully deterministic (no RNG).
+
+    (For the cross-scenario generalization test, call with `scenarios=` to train
+    on one set and evaluate on a held-out scenario.)
+
+    Returns:
+        X_train, X_val, X_test : UNSCALED features (the 9 independent observables).
+                                 Classical Pipelines scale internally; for the DL
+                                 models apply `scaler.transform(...)`.
+        y_train, y_val, y_test : int labels (0=genuine, 1=spoof).
+        feature_names          : the observable column names.
+        scaler                 : StandardScaler fitted on the train block.
+    """
+    from sklearn.preprocessing import StandardScaler
+
+    df, feats = load_texbat_track(verbose=verbose, validate=True,
+                                  scenarios=scenarios)
+    df = df.reset_index(drop=True)
+    tr, va, te = [], [], []
+    for _, g in df.groupby(['scenario', 'prn', 'segment'], sort=False):
+        idx = g.sort_values('t_sec').index.to_numpy()
+        n = len(idx)
+        n_tr = int(round(n * train_frac))
+        n_va = int(round(n * val_frac))
+        tr.append(idx[:max(0, n_tr - purge)])
+        va.append(idx[n_tr + purge:max(n_tr + purge, n_tr + n_va - purge)])
+        te.append(idx[n_tr + n_va + purge:])
+    tr = np.concatenate(tr)
+    va = np.concatenate(va)
+    te = np.concatenate(te)
+    X = df[feats].values.astype(np.float64)
+    y = df['label'].values.astype(int)
+    scaler = StandardScaler().fit(X[tr])
+    if verbose:
+        print(f"  block-temporal split (purge={purge} epochs): "
+              f"train={len(tr):,}  val={len(va):,}  test={len(te):,}")
+    return (X[tr], X[va], X[te], y[tr], y[va], y[te], feats, scaler)
 
 
 if __name__ == "__main__":

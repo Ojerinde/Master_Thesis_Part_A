@@ -39,7 +39,7 @@ create_directories()
 # Model registry — must match 03_adversarial_evaluation.py
 # ---------------------------------------------------------------------------
 SELECTED_CLASSICAL = {
-    'RandomForest':     'RandomForest_SMOTE',
+    'RandomForest':     'RandomForest_default',
     'XGBoost':          'XGBoost_default',
     'LightGBM':         'LightGBM_default',
     'GradientBoosting': 'GradientBoosting',

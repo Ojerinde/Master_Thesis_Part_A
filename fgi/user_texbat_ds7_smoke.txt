@@ -1,0 +1,92 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Paper-1 TEXBAT ds7 SMOKE TEST (first 30 s only). Validates that FGI-GSRx
+% reads the TEXBAT complex 16+16-bit format and acquires/tracks satellites,
+% BEFORE committing to a full multi-hour run. First 30 s of ds7 is authentic
+% (pre-110 s onset), so this tests acquisition/tracking only, not labeling.
+% Acquisition + tracking output are ON so you can visually confirm the read.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% System parameters
+sys,enabledSignals,[{['gpsl1']}],
+sys,msToProcess,30e3,         % SMOKE: first 30 s only
+sys,msToSkip,0e3,
+
+% Input/Output
+sys,loadDataFile,false,
+sys,dataFileIn,'',
+sys,saveDataFile,true,
+sys,dataFileOut,'D:\BEIHANG UNIVERSITY\Research\FGI_Data\out\trackData_ds7_smoke.mat',
+sys,loadIONMetaDataReading,false,
+sys,metaDataFileIn,''
+
+% Plotting: acquisition + tracking output ON to confirm the read visually
+sys,plotSpectra,false,
+sys,plotAcquisition,true,
+sys,plotTracking,false,
+sys,showTrackingOutput,true,
+
+% Tracking mode: sequential (memory-safe)
+sys,parallelChannelTracking,false,
+sys,PCTenabled,false,
+sys,currentWorkingDirectoryForFGIGSRx,'D:\BEIHANG UNIVERSITY\Research\FGI-GSRx\',
+sys,trackDataFilePath,'D:\BEIHANG UNIVERSITY\Research\FGI_Data\out\',
+
+% Multi-correlator OFF
+sys,enableMultiCorrelatorTracking,false,
+
+% Navigation (unused for the smoke; too short for a nav fix anyway)
+nav,navSolPeriod,100,
+nav,elevationMask,5,
+nav,snrMask,30,
+nav,gpsLeapSecond,16,
+nav,trueLat,30.2894,
+nav,trueLong,-97.7361,
+nav,trueHeight,165.0,
+
+% GPS L1 front end (TEXBAT: 25 Msps, complex, 16+16-bit, L1 baseband)
+gpsl1,frontEnd,'TEXBAT',
+gpsl1,rfFileName,'D:\BEIHANG UNIVERSITY\Research\gnss_adversarial_research\data\raw\texbat\ds7.bin',
+gpsl1,centerFrequency,1575420000,
+gpsl1,samplingFreq,25000000,
+gpsl1,bandWidth,2000000,
+gpsl1,sampleSize,32,
+gpsl1,complexData,true,
+gpsl1,iqSwap,false,
+gpsl1,clockOffset,0,
+
+% Acquisition (search all GPS PRNs)
+gpsl1,acqSatelliteList,[1:32],
+gpsl1,nonCohIntNumber,2,
+gpsl1,cohIntNumber,2,
+gpsl1,acqThreshold,10,
+gpsl1,maxSearchFreq,7000,
+
+% Tracking (TEXBAT default tuning)
+gpsl1,fllNoiseBandwidthWide,200,
+gpsl1,fllNoiseBandwidthNarrow,100,
+gpsl1,fllNoiseBandwidthVeryNarrow,5,
+gpsl1,fllDampingRatio,0.7,
+gpsl1,fllLoopGain,1.5,
+gpsl1,pllNoiseBandwidthWide,15,
+gpsl1,pllNoiseBandwidthNarrow,15,
+gpsl1,pllNoiseBandwidthVeryNarrow,10,
+gpsl1,pllDampingRatio,0.7,
+gpsl1,pllLoopGain,0.1,
+gpsl1,dllDampingRatio,0.7,
+gpsl1,dllNoiseBandwidth,1,
+gpsl1,Nc,0.001,
+gpsl1,corrFingers,[-2 -0.25 0 0.25],
+gpsl1,earlyFingerIndex,2,
+gpsl1,promptFingerIndex,3,
+gpsl1,lateFingerIndex,4,
+gpsl1,noiseFingerIndex,1,
+gpsl1,pllWideBandLockIndicatorThreshold,0.5,
+gpsl1,pllNarrowBandLockIndicatorThreshold,0.8,
+gpsl1,runningAvgWindowForLockDetectorInMs,20,
+gpsl1,fllWideBandLockIndicatorThreshold,0.5,
+gpsl1,fllNarrowBandLockIndicatorThreshold,0.7,
+
+% Observations
+gpsl1,enableIonoCorrections,true,
+gpsl1,enableTropoCorrections,true,
+gpsl1,ionomodel,'default',
+gpsl1,ionexFile,''

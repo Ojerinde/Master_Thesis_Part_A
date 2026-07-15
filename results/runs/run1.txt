@@ -1,0 +1,1083 @@
+Cloning paper2-experiment branch...
+Cloning into '/kaggle/working/gnss_adversarial_research'...
+TEXBAT CSV     : 21.1 MB  OK
+SatGrid parquet: 62.8 MB  OK
+Full stats JSON: 1.5 KB  OK
+Repo + data ready
+=== SatGrid Research Sample ===
+Sample rows   : 1,200,000  (full dataset: 176,822,653)
+Sample frac   : 0.68%
+
+Label distribution:
+label
+1    1000000
+0     200000
+Name: count, dtype: int64
+
+Scenarios:
+dataset
+Arlington_Sep_10            400000
+Arlington_Aug_23_Round_2    350000
+Arlington_Nov_8_Round_1     250000
+Arlington_Nov_8_Round_2     200000
+Name: count, dtype: int64
+
+Spoof levels (dB):
+spoof_level_db
+NaN      200000
+40.0     200000
+30.0     100000
+60.0     100000
+50.0     100000
+100.0    100000
+35.0     100000
+0.0      100000
+20.0     100000
+80.0     100000
+
+Setting up directories...
+All directories verified/created.
+
+======================================================================
+STEP 1: DATA LOADING
+======================================================================
+
+======================================================================
+Loading TEXBAT Dataset
+======================================================================
+
+Data file found: /kaggle/working/gnss_adversarial_research/data/raw/texbat_channel_combined.csv
+Loaded 127,719 samples
+Features: 17 columns
+
+Validating data quality...
+
+Validation complete:
+  Initial: 127,719 samples
+  Removed: 0 samples
+  Final:   127,719 samples
+
+======================================================================
+STEP 2: EXTRACTING RAW FEATURES
+======================================================================
+Raw features: 14  Samples: 127,719
+Label distribution: [31892 95827]
+
+======================================================================
+STEP 3: TRAIN/VAL/TEST SPLIT
+======================================================================
+Train: 89,403  Val: 12,772  Test: 25,544
+
+======================================================================
+STEP 4: FEATURE ENGINEERING
+======================================================================
+CRITICAL: All statistics derived from TEXBAT training set only!
+  Created doppler_hz_normalized (train range: [-3349.47, 2636.33])
+  Created cn0_dbhz_normalized (train range: [18.76, 57.65])
+  Created doppler_cn0_ratio
+  Created pseudorange_cn0_ratio
+  Created doppler_hz_deviation (train mean: -310.89, std: 1963.19)
+  Created cn0_dbhz_deviation (train mean: 46.86, std: 5.23)
+  Created is_extreme_doppler_hz (threshold: -310.89 ± 5889.58)
+  Created is_low_cn0_dbhz (threshold: 42.78)
+  Created signal_quality_index
+
+Feature engineering complete:
+  Original features: 14
+  Engineered features: 23
+  Total features: 23
+
+Final feature count: 23
+Feature engineer saved: /kaggle/working/gnss_adversarial_research/data/processed/feature_engineer.pkl
+Raw feature names saved: /kaggle/working/gnss_adversarial_research/data/processed/raw_feature_names.pkl
+StandardScaler saved:   /kaggle/working/gnss_adversarial_research/data/processed/scaler.pkl
+
+NOTE: Classical Pipelines have their own internal scaler.
+      The saved scaler.pkl is for DL models and 05_generalization.py.
+
+======================================================================
+STEP 5: MODEL TRAINING
+======================================================================
+
+======================================================================
+BASELINE MODEL TRAINING
+======================================================================
+
+======================================================================
+Training: RandomForest_default
+======================================================================
+  Running 5-fold CV...
+  CV F1: 0.9358 +/- 0.0007
+  CV AUC: 0.9600 +/- 0.0009
+  Running GridSearchCV for RandomForest_default...
+  Best params: {'model__max_depth': 20, 'model__min_samples_leaf': 5, 'model__n_estimators': 200}  CV F1: 0.9358
+  Training complete in 906.30s
+  Calibrating on validation set...
+  ECE before: 0.0431  after: 0.0670
+  Model saved: /kaggle/working/gnss_adversarial_research/results/models/classical/RandomForest_default.joblib
+
+  Test: Acc=0.8769  P=0.8809  R=0.9666  F1=0.9218  AUC=0.9321
+  PR-AUC=0.9766  Brier=0.0861  ECE=0.0670
+  Threshold (recall>=0.95, feasible): t=0.44  F1=0.9224  (gain=+0.0006)
+
+======================================================================
+Training: RandomForest_balanced
+======================================================================
+  Running 5-fold CV...
+  CV F1: 0.9103 +/- 0.0011
+  CV AUC: 0.9596 +/- 0.0008
+  Running GridSearchCV for RandomForest_balanced...
+  Best params: {'model__max_depth': None, 'model__min_samples_leaf': 5, 'model__n_estimators': 200}  CV F1: 0.9196
+  Training complete in 938.55s
+  Calibrating on validation set...
+  ECE before: 0.0570  after: 0.0689
+  Model saved: /kaggle/working/gnss_adversarial_research/results/models/classical/RandomForest_balanced.joblib
+
+  Test: Acc=0.8762  P=0.8796  R=0.9673  F1=0.9214  AUC=0.9339
+  PR-AUC=0.9773  Brier=0.0857  ECE=0.0689
+  Threshold (recall>=0.95, feasible): t=0.51  F1=0.9217  (gain=+0.0003)
+
+======================================================================
+Training: RandomForest_SMOTE
+======================================================================
+  Running 5-fold CV...
+  CV F1: 0.9077 +/- 0.0023
+  CV AUC: 0.9596 +/- 0.0012
+  Running GridSearchCV for RandomForest_SMOTE...
+  Best params: {'model__max_depth': None, 'model__min_samples_leaf': 5, 'model__n_estimators': 200}  CV F1: 0.9179
+  Training complete in 1658.89s
+  Calibrating on validation set...
+  ECE before: 0.0544  after: 0.0657
+  Model saved: /kaggle/working/gnss_adversarial_research/results/models/classical/RandomForest_SMOTE.joblib
+
+  Test: Acc=0.8799  P=0.8839  R=0.9669  F1=0.9236  AUC=0.9350
+  PR-AUC=0.9777  Brier=0.0847  ECE=0.0657
+  Threshold (recall>=0.95, feasible): t=0.48  F1=0.9238  (gain=+0.0002)
+
+======================================================================
+Training: XGBoost_default
+======================================================================
+  Running 5-fold CV...
+/usr/local/lib/python3.12/dist-packages/joblib/externals/loky/process_executor.py:782: UserWarning: A worker stopped while some jobs were given to the executor. This can be caused by a too short worker timeout or by a memory leak.
+  warnings.warn(
+  CV F1: 0.9165 +/- 0.0007
+  CV AUC: 0.9520 +/- 0.0014
+  Running GridSearchCV for XGBoost_default...
+  Best params: {'model__learning_rate': 0.1, 'model__max_depth': 8, 'model__n_estimators': 200}  CV F1: 0.9278
+  Training complete in 52.35s
+  Calibrating on validation set...
+  ECE before: 0.0362  after: 0.0615
+  Model saved: /kaggle/working/gnss_adversarial_research/results/models/classical/XGBoost_default.joblib
+
+  Test: Acc=0.8739  P=0.9065  R=0.9276  F1=0.9169  AUC=0.9519
+  PR-AUC=0.9846  Brier=0.0756  ECE=0.0615
+  Threshold (recall>=0.95, feasible): t=0.45  F1=0.9185  (gain=+0.0016)
+
+======================================================================
+Training: XGBoost_balanced
+======================================================================
+  Running 5-fold CV...
+  CV F1: 0.8813 +/- 0.0022
+  CV AUC: 0.9494 +/- 0.0008
+  Running GridSearchCV for XGBoost_balanced...
+  Best params: {'model__learning_rate': 0.1, 'model__max_depth': 8, 'model__n_estimators': 200}  CV F1: 0.9148
+  Training complete in 45.89s
+  Calibrating on validation set...
+  ECE before: 0.0730  after: 0.0528
+  Model saved: /kaggle/working/gnss_adversarial_research/results/models/classical/XGBoost_balanced.joblib
+
+  Test: Acc=0.8685  P=0.9063  R=0.9198  F1=0.9130  AUC=0.9479
+  PR-AUC=0.9834  Brier=0.0788  ECE=0.0528
+  Threshold (recall>=0.95, feasible): t=0.45  F1=0.9147  (gain=+0.0017)
+
+======================================================================
+Training: XGBoost_SMOTE
+======================================================================
+  Running 5-fold CV...
+  CV F1: 0.8847 +/- 0.0012
+  CV AUC: 0.9510 +/- 0.0011
+  Running GridSearchCV for XGBoost_SMOTE...
+  Best params: {'model__learning_rate': 0.1, 'model__max_depth': 8, 'model__n_estimators': 200}  CV F1: 0.9213
+  Training complete in 128.51s
+  Calibrating on validation set...
+  ECE before: 0.0691  after: 0.0574
+  Model saved: /kaggle/working/gnss_adversarial_research/results/models/classical/XGBoost_SMOTE.joblib
+
+  Test: Acc=0.8722  P=0.9005  R=0.9328  F1=0.9164  AUC=0.9491
+  PR-AUC=0.9837  Brier=0.0782  ECE=0.0574
+  Threshold (recall>=0.95, feasible): t=0.45  F1=0.9182  (gain=+0.0018)
+
+======================================================================
+Training: LightGBM_default
+======================================================================
+  Running 5-fold CV...
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/joblib/externals/loky/process_executor.py:782: UserWarning: A worker stopped while some jobs were given to the executor. This can be caused by a too short worker timeout or by a memory leak.
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+  CV F1: 0.9153 +/- 0.0011
+  CV AUC: 0.9500 +/- 0.0007
+  Running GridSearchCV for LightGBM_default...
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+  Best params: {'model__learning_rate': 0.1, 'model__n_estimators': 200, 'model__num_leaves': 63}  CV F1: 0.9270
+  Training complete in 2736.47s
+  Calibrating on validation set...
+  ECE before: 0.0360  after: 0.0581
+  Model saved: /kaggle/working/gnss_adversarial_research/results/models/classical/LightGBM_default.joblib
+
+  Test: Acc=0.8752  P=0.9086  R=0.9269  F1=0.9177  AUC=0.9525
+  PR-AUC=0.9848  Brier=0.0753  ECE=0.0581
+  Threshold (recall>=0.95, feasible): t=0.45  F1=0.9189  (gain=+0.0013)
+
+======================================================================
+Training: LightGBM_balanced
+======================================================================
+  Running 5-fold CV...
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+  CV F1: 0.8816 +/- 0.0032
+  CV AUC: 0.9495 +/- 0.0021
+  Running GridSearchCV for LightGBM_balanced...
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+  Best params: {'model__learning_rate': 0.1, 'model__n_estimators': 200, 'model__num_leaves': 63}  CV F1: 0.9069
+  Training complete in 2854.42s
+  Calibrating on validation set...
+  ECE before: 0.0854  after: 0.0594
+  Model saved: /kaggle/working/gnss_adversarial_research/results/models/classical/LightGBM_balanced.joblib
+
+  Test: Acc=0.8731  P=0.9160  R=0.9148  F1=0.9154  AUC=0.9515
+  PR-AUC=0.9846  Brier=0.0761  ECE=0.0594
+  Threshold (recall>=0.95, feasible): t=0.44  F1=0.9182  (gain=+0.0028)
+
+======================================================================
+Training: LightGBM_SMOTE
+======================================================================
+  Running 5-fold CV...
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+  CV F1: 0.8813 +/- 0.0028
+  CV AUC: 0.9486 +/- 0.0018
+  Running GridSearchCV for LightGBM_SMOTE...
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+  Best params: {'model__learning_rate': 0.1, 'model__n_estimators': 200, 'model__num_leaves': 63}  CV F1: 0.9062
+  Training complete in 3012.04s
+  Calibrating on validation set...
+  ECE before: 0.0845  after: 0.0529
+  Model saved: /kaggle/working/gnss_adversarial_research/results/models/classical/LightGBM_SMOTE.joblib
+
+  Test: Acc=0.8717  P=0.9046  R=0.9267  F1=0.9155  AUC=0.9490
+  PR-AUC=0.9836  Brier=0.0784  ECE=0.0529
+  Threshold (recall>=0.95, feasible): t=0.46  F1=0.9173  (gain=+0.0018)
+
+======================================================================
+Training: LogisticRegression_default
+======================================================================
+  Running 5-fold CV...
+  CV F1: 0.8564 +/- 0.0003
+  CV AUC: 0.5631 +/- 0.0075
+  Running GridSearchCV for LogisticRegression_default...
+  Best params: {'model__C': 0.01}  CV F1: 0.8573
+  Training complete in 2.41s
+  Calibrating on validation set...
+  Calibration skipped (operands could not be broadcast together with shapes (10,) (5,) )
+  Model saved: /kaggle/working/gnss_adversarial_research/results/models/classical/LogisticRegression_default.joblib
+
+  Test: Acc=0.7503  P=0.7503  R=1.0000  F1=0.8573  AUC=0.5650
+  PR-AUC=0.8117  Brier=0.1862  ECE=nan
+  Threshold (recall>=0.95, feasible): t=0.05  F1=0.8573  (gain=+0.0000)
+
+======================================================================
+Training: LogisticRegression_balanced
+======================================================================
+  Running 5-fold CV...
+  CV F1: 0.6072 +/- 0.0060
+  CV AUC: 0.5655 +/- 0.0047
+  Running GridSearchCV for LogisticRegression_balanced...
+  Best params: {'model__C': 0.01}  CV F1: 0.6115
+  Training complete in 2.86s
+  Calibrating on validation set...
+  Calibration skipped (operands could not be broadcast together with shapes (10,) (8,) )
+  Model saved: /kaggle/working/gnss_adversarial_research/results/models/classical/LogisticRegression_balanced.joblib
+
+  Test: Acc=0.5360  P=0.8011  R=0.5077  F1=0.6215  AUC=0.5740
+  PR-AUC=0.8195  Brier=0.2473  ECE=nan
+  Threshold (recall>=0.95, feasible): t=0.05  F1=0.8573  (gain=+0.2359)
+
+======================================================================
+Training: LogisticRegression_SMOTE
+======================================================================
+  Running 5-fold CV...
+  CV F1: 0.6080 +/- 0.0077
+  CV AUC: 0.5642 +/- 0.0065
+  Running GridSearchCV for LogisticRegression_SMOTE...
+  Best params: {'model__C': 0.01}  CV F1: 0.6096
+  Training complete in 23.10s
+  Calibrating on validation set...
+  Calibration skipped (operands could not be broadcast together with shapes (10,) (8,) )
+  Model saved: /kaggle/working/gnss_adversarial_research/results/models/classical/LogisticRegression_SMOTE.joblib
+
+  Test: Acc=0.5253  P=0.8195  R=0.4711  F1=0.5983  AUC=0.5718
+  PR-AUC=0.8172  Brier=0.2473  ECE=nan
+  Threshold (recall>=0.95, feasible): t=0.05  F1=0.8573  (gain=+0.2590)
+
+======================================================================
+Training: GradientBoosting
+======================================================================
+  Running 5-fold CV...
+  CV F1: 0.9147 +/- 0.0013
+  CV AUC: 0.9506 +/- 0.0009
+  Training complete in 464.31s
+  Calibrating on validation set...
+  ECE before: 0.0574  after: 0.0451
+  Model saved: /kaggle/working/gnss_adversarial_research/results/models/classical/GradientBoosting.joblib
+
+  Test: Acc=0.8617  P=0.9057  R=0.9104  F1=0.9081  AUC=0.9422
+  PR-AUC=0.9818  Brier=0.0826  ECE=0.0451
+  Threshold (recall>=0.95, feasible): t=0.43  F1=0.9098  (gain=+0.0017)
+
+======================================================================
+Training: KNN
+======================================================================
+  Running 5-fold CV...
+  CV F1: 0.9023 +/- 0.0017
+  CV AUC: 0.8426 +/- 0.0050
+  Training complete in 40.16s
+  Calibrating on validation set...
+  Calibration skipped (operands could not be broadcast together with shapes (10,) (8,) )
+  Model saved: /kaggle/working/gnss_adversarial_research/results/models/classical/KNN.joblib
+
+  Test: Acc=0.8485  P=0.8919  R=0.9082  F1=0.9000  AUC=0.8338
+  PR-AUC=0.9366  Brier=0.1391  ECE=nan
+  Threshold (recall>=0.95, infeasible): t=0.05  F1=0.8760  (gain=-0.0239)
+
+======================================================================
+Training: DecisionTree
+======================================================================
+  Running 5-fold CV...
+  CV F1: 0.8768 +/- 0.0057
+  CV AUC: 0.9270 +/- 0.0070
+  Training complete in 1.84s
+  Calibrating on validation set...
+  ECE before: 0.1031  after: 0.1081
+  Model saved: /kaggle/working/gnss_adversarial_research/results/models/classical/DecisionTree.joblib
+
+  Test: Acc=0.8751  P=0.8747  R=0.9729  F1=0.9212  AUC=0.9292
+  PR-AUC=0.9753  Brier=0.0900  ECE=0.1081
+  Threshold (recall>=0.95, feasible): t=0.47  F1=0.9218  (gain=+0.0006)
+
+======================================================================
+Training: MLP
+======================================================================
+  Running 5-fold CV...
+  CV F1: 0.9121 +/- 0.0026
+  CV AUC: 0.9054 +/- 0.0056
+  Training complete in 98.24s
+  Calibrating on validation set...
+  ECE before: 0.0154  after: 0.0225
+  Model saved: /kaggle/working/gnss_adversarial_research/results/models/classical/MLP.joblib
+
+  Test: Acc=0.8299  P=0.8433  R=0.9499  F1=0.8934  AUC=0.8554
+  PR-AUC=0.9473  Brier=0.1230  ECE=0.0225
+  Threshold (recall>=0.95, feasible): t=0.45  F1=0.8941  (gain=+0.0007)
+
+Optimal thresholds saved: /kaggle/working/gnss_adversarial_research/results/tables/optimal_thresholds.csv
+
+Results saved: /kaggle/working/gnss_adversarial_research/results/tables/baseline_results.csv
+
+======================================================================
+BASELINE RESULTS SUMMARY
+======================================================================
+                 model_name imbalance_strategy  hyperparameter_tuned  accuracy  precision   recall       f1  auc_roc   pr_auc  brier_score  ece_after  cv_f1_mean  cv_f1_std  inference_us  training_time
+         RandomForest_SMOTE              SMOTE                  True  0.879894   0.883907 0.966921 0.923552 0.935018 0.977667     0.084749   0.065693    0.907728   0.002252     42.102511    1658.887236
+       RandomForest_default            default                  True  0.876879   0.880890 0.966608 0.921760 0.932086 0.976569     0.086092   0.067043    0.935828   0.000702     36.072941     906.302905
+      RandomForest_balanced           balanced                  True  0.876174   0.879632 0.967338 0.921402 0.933932 0.977317     0.085658   0.068869    0.910250   0.001143     39.035849     938.551587
+               DecisionTree            default                 False  0.875078   0.874701 0.972869 0.921177 0.929247 0.975304     0.090018   0.108118    0.876781   0.005700      1.270564       1.843702
+           LightGBM_default            default                  True  0.875235   0.908649 0.926902 0.917685 0.952548 0.984845     0.075287   0.058053    0.915350   0.001066     20.294890    2736.472685
+            XGBoost_default            default                  True  0.873865   0.906486 0.927580 0.916912 0.951949 0.984644     0.075637   0.061461    0.916540   0.000697     15.334439      52.354616
+              XGBoost_SMOTE              SMOTE                  True  0.872220   0.900473 0.932798 0.916351 0.949089 0.983651     0.078183   0.057382    0.884726   0.001227     13.569753     128.506045
+             LightGBM_SMOTE              SMOTE                  True  0.871672   0.904563 0.926745 0.915520 0.949032 0.983646     0.078354   0.052885    0.881252   0.002846     18.260910    3012.037891
+          LightGBM_balanced           balanced                  True  0.873121   0.915992 0.914797 0.915394 0.951482 0.984575     0.076146   0.059427    0.881623   0.003231     18.780395    2854.420572
+           XGBoost_balanced           balanced                  True  0.868501   0.906329 0.919806 0.913018 0.947947 0.983446     0.078767   0.052837    0.881271   0.002211     15.343401      45.885701
+           GradientBoosting            default                 False  0.861690   0.905736 0.910414 0.908069 0.942205 0.981780     0.082646   0.045081    0.914674   0.001269     20.063837     464.309656
+                        KNN            default                 False  0.848497   0.891884 0.908171 0.899953 0.833827 0.936598     0.139074        NaN    0.902330   0.001653    239.233082      40.157750
+                        MLP            default                 False  0.829940   0.843261 0.949911 0.893414 0.855432 0.947318     0.122970   0.022490    0.912087   0.002592      6.120140      98.241951
+ LogisticRegression_default            default                  True  0.750313   0.750313 1.000000 0.857347 0.564993 0.811676     0.186239        NaN    0.856450   0.000278      0.137494       2.409376
+LogisticRegression_balanced           balanced                  True  0.536016   0.801087 0.507670 0.621487 0.573953 0.819458     0.247307        NaN    0.607213   0.005979      0.145501       2.864963
+   LogisticRegression_SMOTE              SMOTE                  True  0.525329   0.819494 0.471147 0.598310 0.571843 0.817191     0.247272        NaN    0.607955   0.007705      0.150243      23.104097
+
+======================================================================
+IMBALANCE STRATEGY COMPARISON (RandomForest)
+======================================================================
+           model_name imbalance_strategy  precision   recall       f1   pr_auc
+   RandomForest_SMOTE              SMOTE   0.883907 0.966921 0.923552 0.977667
+ RandomForest_default            default   0.880890 0.966608 0.921760 0.976569
+RandomForest_balanced           balanced   0.879632 0.967338 0.921402 0.977317
+
+======================================================================
+THRESHOLD ANALYSIS SUMMARY (recall >= 0.95)
+======================================================================
+                 model_name  thresh_optimal  thresh_opt_precision  thresh_opt_recall  thresh_opt_f1  thresh_default_f1  thresh_f1_gain
+   LogisticRegression_SMOTE           0.050              0.750313           1.000000       0.857347           0.598310        0.259037
+LogisticRegression_balanced           0.050              0.750313           1.000000       0.857347           0.621487        0.235860
+          LightGBM_balanced           0.440              0.884346           0.954711       0.918183           0.915394        0.002788
+             LightGBM_SMOTE           0.460              0.884934           0.952207       0.917339           0.915520        0.001819
+              XGBoost_SMOTE           0.455              0.880054           0.959720       0.918162           0.916351        0.001811
+           XGBoost_balanced           0.455              0.877721           0.955025       0.914743           0.913018        0.001725
+           GradientBoosting           0.435              0.871938           0.951007       0.909758           0.908069        0.001689
+            XGBoost_default           0.450              0.881360           0.958938       0.918514           0.916912        0.001602
+           LightGBM_default           0.450              0.885566           0.954920       0.918937           0.917685        0.001252
+                        MLP           0.455              0.836286           0.960555       0.894123           0.893414        0.000709
+       RandomForest_default           0.445              0.874147           0.976312       0.922410           0.921760        0.000649
+               DecisionTree           0.470              0.870875           0.978973       0.921766           0.921177        0.000589
+      RandomForest_balanced           0.510              0.882258           0.964886       0.921724           0.921402        0.000321
+         RandomForest_SMOTE           0.480              0.880473           0.971616       0.923802           0.923552        0.000250
+ LogisticRegression_default           0.050              0.750313           1.000000       0.857347           0.857347        0.000000
+                        KNN           0.050              0.820493           0.939633       0.876031           0.899953       -0.023923
+
+======================================================================
+STEP 8: VISUALISATIONS
+======================================================================
+  Saved: /kaggle/working/gnss_adversarial_research/results/figures/baseline/roc_curves.png
+  Saved: /kaggle/working/gnss_adversarial_research/results/figures/baseline/model_comparison.png
+
+======================================================================
+BASELINE EXPERIMENT COMPLETE
+======================================================================
+Best model:  RandomForest_SMOTE  (F1=0.9236)
+Worst model: LogisticRegression_SMOTE  (F1=0.5983)
+
+Artifacts saved to: /kaggle/working/gnss_adversarial_research/data/processed
+  feature_engineer.pkl, raw_feature_names.pkl, scaler.pkl
+  -> These are loaded by 02_deep_learning.py and 05_generalization.py
+Models trained: 16
+                 model_name       f1  auc_roc  precision   recall   pr_auc  cv_f1_mean  cv_f1_std  training_time
+         RandomForest_SMOTE 0.923552 0.935018   0.883907 0.966921 0.977667    0.907728   0.002252    1658.887236
+       RandomForest_default 0.921760 0.932086   0.880890 0.966608 0.976569    0.935828   0.000702     906.302905
+      RandomForest_balanced 0.921402 0.933932   0.879632 0.967338 0.977317    0.910250   0.001143     938.551587
+               DecisionTree 0.921177 0.929247   0.874701 0.972869 0.975304    0.876781   0.005700       1.843702
+           LightGBM_default 0.917685 0.952548   0.908649 0.926902 0.984845    0.915350   0.001066    2736.472685
+            XGBoost_default 0.916912 0.951949   0.906486 0.927580 0.984644    0.916540   0.000697      52.354616
+              XGBoost_SMOTE 0.916351 0.949089   0.900473 0.932798 0.983651    0.884726   0.001227     128.506045
+             LightGBM_SMOTE 0.915520 0.949032   0.904563 0.926745 0.983646    0.881252   0.002846    3012.037891
+          LightGBM_balanced 0.915394 0.951482   0.915992 0.914797 0.984575    0.881623   0.003231    2854.420572
+           XGBoost_balanced 0.913018 0.947947   0.906329 0.919806 0.983446    0.881271   0.002211      45.885701
+           GradientBoosting 0.908069 0.942205   0.905736 0.910414 0.981780    0.914674   0.001269     464.309656
+                        KNN 0.899953 0.833827   0.891884 0.908171 0.936598    0.902330   0.001653      40.157750
+                        MLP 0.893414 0.855432   0.843261 0.949911 0.947318    0.912087   0.002592      98.241951
+ LogisticRegression_default 0.857347 0.564993   0.750313 1.000000 0.811676    0.856450   0.000278       2.409376
+LogisticRegression_balanced 0.621487 0.573953   0.801087 0.507670 0.819458    0.607213   0.005979       2.864963
+   LogisticRegression_SMOTE 0.598310 0.571843   0.819494 0.471147 0.817191    0.607955   0.007705      23.104097
+
+Model files: 16
+
+======================================================================
+  EXPERIMENT 05: CROSS-DATASET GENERALIZATION
+  TEXBAT-trained models evaluated on SatGrid
+======================================================================
+
+This script runs INFERENCE ONLY -- no model is retrained.
+
+======================================================================
+STEP 1: Loading TEXBAT training artifacts
+======================================================================
+
+Loading feature engineer (fitted on TEXBAT training data)...
+  OK -- using TEXBAT training statistics for all feature transforms
+
+Loading raw TEXBAT feature names...
+  14 raw features: ['rrt_week', 'rrt_sec', 'ort_week', 'ort_whole_sec', 'ort_frac_sec'] ...
+
+Loading TEXBAT StandardScaler...
+  OK -- using TEXBAT training mean/std for scaling
+
+======================================================================
+STEP 2: Loading trained models
+======================================================================
+
+Classical models:
+  Loaded classical: DecisionTree
+  Loaded classical: GradientBoosting
+  Loaded classical: KNN
+  Loaded classical: LightGBM_SMOTE
+  Loaded classical: LightGBM_balanced
+  Loaded classical: LightGBM_default
+  Loaded classical: LogisticRegression_SMOTE
+  Loaded classical: LogisticRegression_balanced
+  Loaded classical: LogisticRegression_default
+  Loaded classical: MLP
+  Loaded classical: RandomForest_SMOTE
+  Loaded classical: RandomForest_balanced
+  Loaded classical: RandomForest_default
+  Loaded classical: XGBoost_SMOTE
+  Loaded classical: XGBoost_balanced
+  Loaded classical: XGBoost_default
+  Loaded 16 classical models
+
+Deep learning models:
+  No DL models found (run 02_deep_learning.py first if needed)
+
+Optimal TEXBAT thresholds loaded: 16 models
+  (Will compute metrics at default 0.5 AND at TEXBAT-optimal threshold)
+
+======================================================================
+STEP 3: Preparing SatGrid data
+  Using TEXBAT-fitted transformations -- NO re-fitting
+======================================================================
+
+Loading SatGrid research sample (Parquet)...
+  Rows: 1,200,000   Columns: 20
+
+Applying TEXBAT feature engineer (transform only, no fit)...
+  Engineered shape: (1200000, 23)
+
+Applying TEXBAT scaler (transform only, no fit)...
+  Scaled shape: (1200000, 23)
+
+SatGrid summary:
+  Samples    : 1,200,000
+  Genuine    : 200,000  (16.7%)
+  Counterfeit: 1,000,000  (83.3%)
+  Features   : 23
+
+======================================================================
+STEP 4: Evaluating models on SatGrid (inference only)
+======================================================================
+
+Classical models:
+  DecisionTree                                   F1=0.9091  AUC=0.5205  Recall=1.0000  F1@TEXBAT_thresh=0.9091
+  GradientBoosting                               F1=0.9089  AUC=0.4920  Recall=0.9995  F1@TEXBAT_thresh=0.9090
+  KNN                                            F1=0.9091  AUC=0.5992  Recall=1.0000  F1@TEXBAT_thresh=0.9091
+  LightGBM_SMOTE                                 F1=0.9090  AUC=0.5656  Recall=0.9999  F1@TEXBAT_thresh=0.9091
+  LightGBM_balanced                              F1=0.9091  AUC=0.5062  Recall=1.0000  F1@TEXBAT_thresh=0.9091
+  LightGBM_default                               F1=0.9091  AUC=0.5423  Recall=1.0000  F1@TEXBAT_thresh=0.9091
+  LogisticRegression_SMOTE                       F1=0.2779  AUC=0.4879  Recall=0.1672  F1@TEXBAT_thresh=0.9091
+  LogisticRegression_balanced                    F1=0.1369  AUC=0.4828  Recall=0.0752  F1@TEXBAT_thresh=0.9091
+  LogisticRegression_default                     F1=0.7594  AUC=0.4937  Recall=0.6936  F1@TEXBAT_thresh=0.9091
+  MLP                                            F1=0.9091  AUC=0.5241  Recall=1.0000  F1@TEXBAT_thresh=0.9091
+  RandomForest_SMOTE                             F1=0.9091  AUC=0.6674  Recall=1.0000  F1@TEXBAT_thresh=0.9091
+  RandomForest_balanced                          F1=0.9091  AUC=0.6930  Recall=1.0000  F1@TEXBAT_thresh=0.9091
+  RandomForest_default                           F1=0.9091  AUC=0.6972  Recall=1.0000  F1@TEXBAT_thresh=0.9091
+  XGBoost_SMOTE                                  F1=0.9091  AUC=0.6438  Recall=0.9999  F1@TEXBAT_thresh=0.9091
+  XGBoost_balanced                               F1=0.9091  AUC=0.5483  Recall=1.0000  F1@TEXBAT_thresh=0.9091
+  XGBoost_default                                F1=0.9091  AUC=0.6084  Recall=1.0000  F1@TEXBAT_thresh=0.9091
+
+======================================================================
+STEP 5: Comparing SatGrid vs TEXBAT baseline results
+======================================================================
+---------------------------------------------------------------------------
+KeyError                                  Traceback (most recent call last)
+/usr/local/lib/python3.12/dist-packages/pandas/core/indexes/base.py in get_loc(self, key)
+   3811         try:
+-> 3812             return self._engine.get_loc(casted_key)
+   3813         except KeyError as err:
+
+pandas/_libs/index.pyx in pandas._libs.index.IndexEngine.get_loc()
+
+pandas/_libs/index.pyx in pandas._libs.index.IndexEngine.get_loc()
+
+pandas/_libs/hashtable_class_helper.pxi in pandas._libs.hashtable.PyObjectHashTable.get_item()
+
+pandas/_libs/hashtable_class_helper.pxi in pandas._libs.hashtable.PyObjectHashTable.get_item()
+
+KeyError: 'f1_at_texbat_thresh'
+
+The above exception was the direct cause of the following exception:
+
+KeyError                                  Traceback (most recent call last)
+/kaggle/working/gnss_adversarial_research/experiments/05_generalization.py in <module>
+    821                         help="Fast smoke test: 5000 SatGrid rows only")
+    822     args = parser.parse_args()
+--> 823     main(smoke_test=args.smoke_test)
+
+/kaggle/working/gnss_adversarial_research/experiments/05_generalization.py in main(smoke_test)
+    721     print("="*70)
+    722 
+--> 723     comparison_df = build_comparison_table(
+    724         satgrid_results=satgrid_results,
+    725         baseline_csv=BASELINE_CSV,
+
+/kaggle/working/gnss_adversarial_research/experiments/05_generalization.py in build_comparison_table(satgrid_results, baseline_csv, dl_baseline_csv)
+    406         merged = merged.merge(_extra, on='model_name', how='left')
+    407         merged['f1_thresh_drop'] = (
+--> 408             merged['f1_texbat'] - merged['f1_at_texbat_thresh'])
+    409 
+    410     # Tidy column order
+
+/usr/local/lib/python3.12/dist-packages/pandas/core/frame.py in __getitem__(self, key)
+   4111             if self.columns.nlevels > 1:
+   4112                 return self._getitem_multilevel(key)
+-> 4113             indexer = self.columns.get_loc(key)
+   4114             if is_integer(indexer):
+   4115                 indexer = [indexer]
+
+/usr/local/lib/python3.12/dist-packages/pandas/core/indexes/base.py in get_loc(self, key)
+   3817             ):
+   3818                 raise InvalidIndexError(key)
+-> 3819             raise KeyError(key) from err
+   3820         except TypeError:
+   3821             # If we have a listlike key, _check_indexing_error will raise
+
+KeyError: 'f1_at_texbat_thresh'
+
+Loaded 16 models
+Spoof levels: [0, 20, 30, 35, 40, 50, 60, 80, 100] dB
+  DecisionTree...
+  GradientBoosting...
+  KNN...
+  LightGBM_SMOTE...
+  LightGBM_balanced...
+  LightGBM_default...
+  LogisticRegression_SMOTE...
+  LogisticRegression_balanced...
+  LogisticRegression_default...
+  MLP...
+  RandomForest_SMOTE...
+  RandomForest_balanced...
+  RandomForest_default...
+  XGBoost_SMOTE...
+  XGBoost_balanced...
+  XGBoost_default...
+Power robustness results saved.
+Figure: /kaggle/working/gnss_adversarial_research/results/figures/power_robustness/detection_vs_power.png
+
+Tables  -> /kaggle/working/paper2_results_20260528_220304/tables
+Figures -> /kaggle/working/paper2_results_20260528_220304/figures
+Models  -> /kaggle/working/paper2_results_20260528_220304/models
+Artifacts -> /kaggle/working/paper2_results_20260528_220304/artifacts
+
+Zipped results: /kaggle/working/paper2_results_20260528_220304.zip  (185.4 MB)
+Download from: Output tab (top-right) -> paper2_results_*.zip
+
+======================================================================
+PAPER 2 EXPERIMENT SUMMARY
+======================================================================
+
+TEXBAT Baseline -- best model: RandomForest_SMOTE
+  F1=0.9236  AUC=0.9350  PR-AUC=0.9777
+  CV F1: 0.9077 +/- 0.0023
+
+Avg detection rate per spoofing level (all models):
+spoof_level_db
+0.0      0.845241
+20.0     0.870801
+30.0     0.874533
+35.0     0.872383
+40.0     0.875464
+50.0     0.873229
+60.0     0.874057
+80.0     0.871722
+100.0    0.876653
+
+======================================================================
+Done. Download results from the Output tab.

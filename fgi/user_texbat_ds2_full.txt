@@ -1,0 +1,93 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Paper-1 TEXBAT ds2 (Static Overpowered Time Push, 10 dB, victim loses lock).
+% Self-contained FGI-GSRx user parameter file. TEXBAT front-end (25 Msps,
+% complex, 16+16-bit, L1 baseband). Sequential tracking (memory-safe).
+% TRACK-ONLY: gsrx saves trackData before the nav stage (gsrx.m:112), no runaway.
+% Smoke first (msToProcess=30e3), confirm acquisition, then restore 420e3.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% System parameters
+sys,enabledSignals,[{['gpsl1']}],
+sys,msToProcess,250e3,        % 250 s window: genuine (0-75 s) + spoof (125-250 s). Tracking time scales ~quadratically with window length in FGI-GSRx, so 250 s is ~6x faster than the full ~426 s.
+sys,msToSkip,0e3,
+
+% Input/Output
+sys,loadDataFile,false,
+sys,dataFileIn,'',
+sys,saveDataFile,true,
+sys,dataFileOut,'D:\BEIHANG UNIVERSITY\Research\FGI_Data\out\trackData_ds2_full.mat',
+sys,loadIONMetaDataReading,false,
+sys,metaDataFileIn,''
+
+% Plotting OFF (headless batch)
+sys,plotSpectra,false,
+sys,plotAcquisition,false,
+sys,plotTracking,false,
+sys,showTrackingOutput,false,
+
+% Tracking mode: sequential (memory-safe on 16 GB)
+sys,parallelChannelTracking,false,
+sys,PCTenabled,false,
+sys,currentWorkingDirectoryForFGIGSRx,'D:\BEIHANG UNIVERSITY\Research\FGI-GSRx\',
+sys,trackDataFilePath,'D:\BEIHANG UNIVERSITY\Research\FGI_Data\out\',
+
+% Multi-correlator OFF for the first pass (base observables only).
+sys,enableMultiCorrelatorTracking,false,
+
+% Navigation (position stats only; NOT used by Paper-1 track-only features)
+nav,navSolPeriod,100,
+nav,elevationMask,5,
+nav,snrMask,30,
+nav,gpsLeapSecond,16,          % nav-time only; unused for track features
+% TODO(user): TEXBAT surveyed antenna position from the ION-2012 paper (unused for track-only).
+nav,trueLat,30.2894,
+nav,trueLong,-97.7361,
+nav,trueHeight,165.0,
+
+% GPS L1 front end (TEXBAT: 25 Msps, complex, 16+16-bit, L1 baseband)
+gpsl1,frontEnd,'TEXBAT',
+gpsl1,rfFileName,'D:\BEIHANG UNIVERSITY\Research\gnss_adversarial_research\data\raw\texbat\ds2.bin',
+gpsl1,centerFrequency,1575420000,
+gpsl1,samplingFreq,25000000,
+gpsl1,bandWidth,2000000,
+gpsl1,sampleSize,32,
+gpsl1,complexData,true,
+gpsl1,iqSwap,false,
+gpsl1,clockOffset,0,
+
+% Acquisition (search all GPS PRNs; acquisition keeps those actually present)
+gpsl1,acqSatelliteList,[1:32],
+gpsl1,nonCohIntNumber,2,
+gpsl1,cohIntNumber,2,
+gpsl1,acqThreshold,10,
+gpsl1,maxSearchFreq,7000,
+
+% Tracking (TEXBAT default tuning)
+gpsl1,fllNoiseBandwidthWide,200,
+gpsl1,fllNoiseBandwidthNarrow,100,
+gpsl1,fllNoiseBandwidthVeryNarrow,5,
+gpsl1,fllDampingRatio,0.7,
+gpsl1,fllLoopGain,1.5,
+gpsl1,pllNoiseBandwidthWide,15,
+gpsl1,pllNoiseBandwidthNarrow,15,
+gpsl1,pllNoiseBandwidthVeryNarrow,10,
+gpsl1,pllDampingRatio,0.7,
+gpsl1,pllLoopGain,0.1,
+gpsl1,dllDampingRatio,0.7,
+gpsl1,dllNoiseBandwidth,1,
+gpsl1,Nc,0.001,
+gpsl1,corrFingers,[-2 -0.25 0 0.25],
+gpsl1,earlyFingerIndex,2,
+gpsl1,promptFingerIndex,3,
+gpsl1,lateFingerIndex,4,
+gpsl1,noiseFingerIndex,1,
+gpsl1,pllWideBandLockIndicatorThreshold,0.5,
+gpsl1,pllNarrowBandLockIndicatorThreshold,0.8,
+gpsl1,runningAvgWindowForLockDetectorInMs,20,
+gpsl1,fllWideBandLockIndicatorThreshold,0.5,
+gpsl1,fllNarrowBandLockIndicatorThreshold,0.7,
+
+% Observations
+gpsl1,enableIonoCorrections,true,
+gpsl1,enableTropoCorrections,true,
+gpsl1,ionomodel,'default',
+gpsl1,ionexFile,''

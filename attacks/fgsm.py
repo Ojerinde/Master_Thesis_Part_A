@@ -10,6 +10,16 @@ non-differentiable boundaries; gradient attacks are meaningless on them.
 Classical model robustness is assessed via transfer attacks and
 feature-space attacks (DLSA, SNA, TPA).
 
+Bug fix vs previous version
+-----------------------------
+Previously constructed GNSSConstraintEnforcer internally without calling
+fit(), so normalised_bounds_ was empty and the enforcer fell back to
+±10 for every feature — the GNSS constraint claim was not enforced.
+
+Now accepts a pre-fitted enforcer from the caller (passed in from main()
+where it is fitted on training data). If none is supplied, no clipping
+is applied and this is stated explicitly.
+
 Reference
 ---------
 Goodfellow, I. J., Shlens, J., & Szegedy, C. (2015).
@@ -22,6 +32,7 @@ import torch.nn as nn
 from typing import Optional
 
 from utils.gnss_constraints import GNSSConstraintEnforcer
+from utils.torch_compat import grad_compat_mode
 
 
 class FGSMAttack:
@@ -55,11 +66,14 @@ class FGSMAttack:
     def _compute_signed_gradient(self, X_t: torch.Tensor,
                                  y_t: torch.Tensor) -> np.ndarray:
         """Return sign(∂L/∂x) via PyTorch autograd."""
-        self.nn_module.eval()
         X_var = X_t.clone().detach().requires_grad_(True)
-        logits = self.nn_module(X_var)
-        loss = self.criterion(logits, y_t)
-        loss.backward()
+        # grad_compat_mode: full model.train() so cuDNN RNN saves the backward
+        # workspace, then BN/Dropout individually set to eval() for deterministic
+        # gradients. Restores original mode on exit. See utils/torch_compat.
+        with grad_compat_mode(self.nn_module):
+            logits = self.nn_module(X_var)
+            loss = self.criterion(logits, y_t)
+            loss.backward()
         return X_var.grad.sign().detach().cpu().numpy()
 
     def generate(self, X: np.ndarray, y: np.ndarray) -> np.ndarray:
@@ -84,12 +98,18 @@ class FGSMAttack:
         # Projection onto L-inf ball around original X
         X_adv = np.clip(X_adv, X - self.epsilon, X + self.epsilon)
 
-        # Physical constraint clipping — applied first so GNSS bounds are respected.
+        # GNSS physical constraint clipping (only if enforcer is fitted).
+        # Applied first so physical bounds are respected where possible.
         if self.gnss_enforcer is not None:
             X_adv = self.gnss_enforcer.clip_to_gnss_bounds(X_adv)
 
-        # Re-enforce epsilon-ball after physical constraint clipping.
-        # The enforcer can only restrict the perturbation budget, never expand it.
+        # Re-enforce epsilon ball AFTER the enforcer.
+        # The enforcer can only RESTRICT the perturbation budget, never expand it.
+        # Without this, outlier test samples (with feature values outside the
+        # training data range) get "corrected" by the enforcer to the training
+        # bound, producing apparent L-inf perturbations >> epsilon and making
+        # all epsilon values appear identical (observed: L-inf=11.2037 for all
+        # epsilon in {0.05, 0.10, 0.20}).
         X_adv = np.clip(X_adv, X - self.epsilon, X + self.epsilon)
 
         return X_adv.astype(np.float32)

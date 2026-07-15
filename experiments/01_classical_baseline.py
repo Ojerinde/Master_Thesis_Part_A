@@ -13,8 +13,7 @@ from evaluation.visualization import (
     plot_model_comparison,
 )
 from evaluation.metrics import evaluate_model, compare_models
-from data.feature_engineering import SafeFeatureEngineer
-from data.loader import load_texbat
+from data.loader import load_texbat_track, load_track_splits
 from config.model_configs import get_config
 from config.paths import create_directories, CLASSICAL_MODELS, TABLES_DIR, PROCESSED_DATA_DIR, SCALER_PATH
 from imblearn.pipeline import Pipeline as ImbPipeline
@@ -589,52 +588,22 @@ def main():
     print("\n" + "=" * 70)
     print("STEP 1: DATA LOADING")
     print("=" * 70)
-    df, loader = load_texbat(verbose=True, validate=True)
+    # Leakage-free block-temporal split of the 9 independent FGI observables
+    # (see data.loader.load_track_splits: contiguous temporal blocks per
+    # scenario/PRN/segment, with purge gaps — no random shuffling, so adjacent
+    # near-identical epochs never straddle train/test). Classical Pipelines scale
+    # internally, so they take the UNSCALED X; the returned StandardScaler is
+    # saved for the DL baseline (02).
+    (X_train, X_val, X_test, y_train, y_val, y_test,
+     feature_names, scaler) = load_track_splits(verbose=True)
+    numeric_cols = feature_names
+    print(f"✓ Features: {len(feature_names)}  "
+          f"Train/Val/Test: {len(X_train):,}/{len(X_val):,}/{len(X_test):,}")
+    print(f"✓ Train label dist: {np.bincount(y_train)}")
 
-    # Step 2: Extract raw features
-    print("\n" + "=" * 70)
-    print("STEP 2: EXTRACTING RAW FEATURES")
-    print("=" * 70)
-    numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
-    for col in ['label', 'Label']:
-        if col in numeric_cols:
-            numeric_cols.remove(col)
-    if 'Label' in df.columns:
-        df = df.rename(columns={'Label': 'label'})
-
-    y = df['label'].values.astype(int)
-    X_raw = df[numeric_cols].values
-    print(f"✓ Raw features: {X_raw.shape[1]} features, {len(X_raw):,} samples")
-    print(f"✓ Label distribution: {np.bincount(y)}")
-
-    counts = np.bincount(y)
-    pos_neg_ratio = float(counts[0] / counts[1]) if counts[1] > 0 else 1.0
-    print(f"✓ Negative/Positive ratio: {pos_neg_ratio:.2f}")
-
-    # Step 3: Train / val / test split (before feature engineering)
-    print("\n" + "=" * 70)
-    print("STEP 3: TRAIN/VAL/TEST SPLIT")
-    print("=" * 70)
-    X_temp, X_test_raw, y_temp, y_test = train_test_split(
-        X_raw, y, test_size=0.2, random_state=42, stratify=y)
-    X_train_raw, X_val_raw, y_train, y_val = train_test_split(
-        X_temp, y_temp, test_size=0.125, random_state=42, stratify=y_temp)
-
-    print(f"Train: {len(X_train_raw):,}  Val: {len(X_val_raw):,}  "
-          f"Test: {len(X_test_raw):,}")
-    print(f"Label dist — Train: {np.bincount(y_train)}  "
-          f"Val: {np.bincount(y_val)}  Test: {np.bincount(y_test)}")
-
-    # Step 4: Feature engineering (fit on train only — no leakage)
-    print("\n" + "=" * 70)
-    print("STEP 4: FEATURE ENGINEERING")
-    print("=" * 70)
-    print("CRITICAL: All statistics derived from training set only!")
-
-    engineer = SafeFeatureEngineer(verbose=True)
-    X_train, X_val, feature_names = engineer.fit_transform(
-        X_train_raw, X_val_raw, feature_names=numeric_cols)
-    X_test = engineer.transform(X_test_raw)
+    counts = np.bincount(y_train)
+    pos_neg_ratio = float(counts[0] / counts[1]) if len(counts) > 1 and counts[1] > 0 else 1.0
+    print(f"✓ Negative/Positive ratio (train): {pos_neg_ratio:.2f}")
 
     assert X_test.shape[0] == len(
         y_test),           "Test sample count mismatch"
@@ -647,10 +616,6 @@ def main():
 
     # Save artifacts for 02_deep_learning_baseline.py
     PROCESSED_DATA_DIR.mkdir(parents=True, exist_ok=True)
-    with open(ENGINEER_PATH, 'wb') as f:
-        pickle.dump(engineer, f)
-    print(f"✓ Feature engineer saved: {ENGINEER_PATH}")
-
     with open(RAW_FEATURE_NAMES_PATH, 'wb') as f:
         pickle.dump(numeric_cols, f)
     print(f"✓ Raw feature names saved: {RAW_FEATURE_NAMES_PATH}")

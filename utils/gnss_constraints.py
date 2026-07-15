@@ -1,7 +1,25 @@
 """
-GNSS Physical Constraint Enforcer — clips adversarial examples to
-data-driven bounds (mu +/- 6*sigma from training set) with optional
-hard-floor enforcement from GNSS physical signal constraints.
+GNSS Physical Constraint Enforcer
+====================================
+Single source of truth for GNSS signal physical bounds.
+
+Used by all attack implementations to ensure adversarial examples
+remain physically plausible after perturbation.
+
+Bounds are derived from:
+  - Kaplan & Hegarty (2017): Understanding GPS/GNSS, 3rd ed., Artech House.
+  - Psiaki & Humphreys (2016): GNSS Spoofing and Detection.
+    Proc. IEEE, 104(6), 1258-1270.
+
+Note: all attacks operate in NORMALISED feature space (after StandardScaler).
+The bounds below are in ORIGINAL physical units and are applied by inverse-
+transforming, clipping, then re-transforming — OR by simply clipping the
+normalised values to the range they would map to after StandardScaler.
+In practice, StandardScaler shifts and scales but does not clip, so extreme
+values after attack can be clipped by the NORMALISED equivalents stored in
+self.normalised_bounds (set via fit()).  The default clip_to_gnss_bounds()
+operates in normalised space using data-driven bounds unless physical bounds
+are provided.
 """
 
 import numpy as np
@@ -80,6 +98,55 @@ class GNSSConstraintEnforcer:
                 float(mu[i] + 6 * sigma[i]),
             )
         return self
+
+    # ------------------------------------------------------------------
+    def fit_coupling(self, X_phys: np.ndarray, feature_names: List[str],
+                     name_i: str = 'i_prompt', name_q: str = 'q_prompt',
+                     name_cn0: str = 'cn0_dbhz'):
+        """
+        Learn the physical C/N0 ~ I/Q-power coupling so an attack cannot set
+        C/N0 independently of the prompt correlator power (the two are physically
+        linked: C/N0 is estimated from the same I/Q the detector also sees).
+
+        Fits cn0 ~ a + b*log10(i^2 + q^2) on the UNSCALED training set and stores
+        the empirical residual band [1st, 99th percentile]. Optional; call after
+        fit(). No-op if the three columns are not all present. This is the
+        realizability constraint Reviewer #4 asks for; see enforce_coupling_phys.
+        """
+        self.coupling_ = None
+        try:
+            ii = feature_names.index(name_i)
+            iq = feature_names.index(name_q)
+            ic = feature_names.index(name_cn0)
+        except (ValueError, AttributeError):
+            return self
+        logp = np.log10(np.clip(X_phys[:, ii] ** 2 + X_phys[:, iq] ** 2, 1e-9, None))
+        cn0 = X_phys[:, ic].astype(np.float64)
+        b, a = np.polyfit(logp, cn0, 1)
+        resid = cn0 - (a + b * logp)
+        self.coupling_ = {
+            'i': ii, 'q': iq, 'c': ic, 'a': float(a), 'b': float(b),
+            'res_lo': float(np.percentile(resid, 1)),
+            'res_hi': float(np.percentile(resid, 99)),
+        }
+        return self
+
+    def enforce_coupling_phys(self, X_phys: np.ndarray) -> np.ndarray:
+        """
+        Clip C/N0 (physical units) to stay within the learned residual band of the
+        value predicted from the (possibly perturbed) I/Q power, keeping adversarial
+        examples on the physically-realizable C/N0~power manifold. Operates on
+        UNSCALED features; no-op if fit_coupling was not called. For scaled-space
+        attacks, inverse-transform, call this, then re-transform.
+        """
+        if not getattr(self, 'coupling_', None):
+            return X_phys
+        c = self.coupling_
+        X = X_phys.copy()
+        logp = np.log10(np.clip(X[:, c['i']] ** 2 + X[:, c['q']] ** 2, 1e-9, None))
+        pred = c['a'] + c['b'] * logp
+        X[:, c['c']] = np.clip(X[:, c['c']], pred + c['res_lo'], pred + c['res_hi'])
+        return X
 
     # ------------------------------------------------------------------
     def clip_to_gnss_bounds(self, X: np.ndarray) -> np.ndarray:

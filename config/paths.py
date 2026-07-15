@@ -13,6 +13,7 @@ TEXBAT_CSV = RAW_DATA_DIR / "texbat_channel_combined.csv"
 
 # Processed / cached splits
 PROCESSED_DATA_DIR = PROJECT_ROOT / "data" / "processed"
+TEXBAT_TRACK_CSV = PROCESSED_DATA_DIR / "texbat_track_combined.csv"  # FGI-GSRx observable corpus (Paper 1 rebuild)
 TRAIN_DATA_PATH = PROCESSED_DATA_DIR / "train_data.pkl"
 TEST_DATA_PATH = PROCESSED_DATA_DIR / "test_data.pkl"
 VAL_DATA_PATH = PROCESSED_DATA_DIR / "val_data.pkl"

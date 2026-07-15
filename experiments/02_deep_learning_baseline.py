@@ -15,8 +15,7 @@ from config.paths import (
     SCALER_PATH,
 )
 from config.model_configs import get_config
-from data.feature_engineering import SafeFeatureEngineer
-from data.loader import load_texbat
+from data.loader import load_texbat_track, load_track_splits
 from evaluation.visualization import (
     plot_roc_curves,
     plot_confusion_matrices,
@@ -319,65 +318,17 @@ def main():
     print("Setting up directories...")
     create_directories()
 
-    # ── Check prerequisites ──────────────────────────────────────────────────
-    for path, label in [
-        (ENGINEER_PATH,          "Feature engineer"),
-        (RAW_FEATURE_NAMES_PATH, "Raw feature names"),
-        (SCALER_PATH,            "StandardScaler"),
-    ]:
-        if not path.exists():
-            raise FileNotFoundError(
-                f"\n{label} not found at: {path}\n"
-                f"Run 01_classical_baseline.py first — it saves these artifacts.\n"
-            )
-
-    # ── Step 1: Load TEXBAT ─────────────────────────────────────────────────
-    print("\n" + "="*70 + "\nSTEP 1: DATA LOADING\n" + "="*70)
-    df, loader = load_texbat(verbose=True, validate=True)
-
-    # ── Step 2: Raw features ────────────────────────────────────────────────
-    print("\n" + "="*70 + "\nSTEP 2: EXTRACTING RAW FEATURES\n" + "="*70)
-    if 'Label' in df.columns:
-        df = df.rename(columns={'Label': 'label'})
-    with open(RAW_FEATURE_NAMES_PATH, 'rb') as f:
-        numeric_cols = pickle.load(f)
-    print(
-        f"Loaded raw feature names from 01_classical_baseline: {len(numeric_cols)} features")
-    y = df['label'].values.astype(int)
-    X_raw = df[numeric_cols].values
-    print(f"Raw features: {X_raw.shape[1]}  Samples: {len(X_raw):,}")
-
-    # ── Step 3: Same split as 01_classical_baseline (same seed = same rows) ─
-    print("\n" + "="*70 + "\nSTEP 3: TRAIN/VAL/TEST SPLIT\n" + "="*70)
-    print("Using identical split parameters as 01_classical_baseline (random_state=42).")
-    X_temp,      X_test_raw, y_temp,  y_test = train_test_split(
-        X_raw, y, test_size=0.2, random_state=42, stratify=y)
-    X_train_raw, X_val_raw,  y_train, y_val = train_test_split(
-        X_temp, y_temp, test_size=0.125, random_state=42, stratify=y_temp)
-    print(
-        f"Train: {len(X_train_raw):,}  Val: {len(X_val_raw):,}  Test: {len(X_test_raw):,}")
-
-    # Step 4: Load fitted engineer (no re-fitting)
-    print("\n" + "="*70 +
-          "\nSTEP 4: FEATURE ENGINEERING  (loading from 01_classical_baseline)\n" + "="*70)
-    with open(ENGINEER_PATH, 'rb') as f:
-        engineer = pickle.load(f)
-    X_train_eng = engineer.transform(X_train_raw)
-    X_val_eng = engineer.transform(X_val_raw)
-    X_test_eng = engineer.transform(X_test_raw)
-    print(f"Feature count: {X_train_eng.shape[1]}")
-
-    # Step 5: Load fitted scaler (no re-fitting)
-    print("\n" + "="*70 +
-          "\nSTEP 5: SCALING  (loading from 01_classical_baseline)\n" + "="*70)
-    with open(SCALER_PATH, 'rb') as f:
-        scaler = pickle.load(f)
-    X_train = scaler.transform(X_train_eng).astype(np.float32)
-    X_val = scaler.transform(X_val_eng).astype(np.float32)
-    X_test = scaler.transform(X_test_eng).astype(np.float32)
-    print(f"Train: {X_train.shape}  Val: {X_val.shape}  Test: {X_test.shape}")
-    print(
-        f"Train mean ~0: {X_train.mean():.4f}  val: {X_val.mean():.4f}  test: {X_test.mean():.4f}")
+    # ── Steps 1-4: leakage-free block-temporal split (the SAME partition as
+    # 01_classical_baseline, via the shared load_track_splits), then scale for the
+    # DL nets. No feature engineering: the 9 FGI observables are used directly.
+    print("\n" + "="*70 + "\nSTEP 1: LOAD + BLOCK-TEMPORAL SPLIT + SCALE\n" + "="*70)
+    (X_train, X_val, X_test, y_train, y_val, y_test,
+     numeric_cols, scaler) = load_track_splits(verbose=True)
+    X_train = scaler.transform(X_train).astype(np.float32)
+    X_val   = scaler.transform(X_val).astype(np.float32)
+    X_test  = scaler.transform(X_test).astype(np.float32)
+    print(f"Features: {len(numeric_cols)}  "
+          f"Train: {X_train.shape}  Val: {X_val.shape}  Test: {X_test.shape}")
 
     # ── Step 6: Train ────────────────────────────────────────────────────────
     print("\n" + "="*70 + "\nSTEP 6: DEEP LEARNING MODEL TRAINING\n" + "="*70)
