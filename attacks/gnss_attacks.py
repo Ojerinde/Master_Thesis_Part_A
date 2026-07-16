@@ -25,10 +25,24 @@ Bug fixes applied
 - All attacks are now deterministic given same inputs — safe to call
   once and reuse result for both timing measurement and evaluation.
 
+Attribution note (IMPORTANT for the manuscript)
+------------------------------------------------
+The names "Data Location Shift Attack" and "Similarity(-based) Noise Attack" are
+also used by An, Jang & Lee (2025), "Adversarial Evasion Attacks on SVM-Based GPS
+Spoofing Detection Systems," Sensors 25(19):6062, doi:10.3390/s25196062, where they
+denote POSITION-DOMAIN perturbations of the reported GPS position against a single
+SVM. The implementations here operate in the RECEIVER-OBSERVABLE feature space and
+across 13 detectors. The paper must cite An et al. (2025) for these attack families
+and must NOT present DLSA/SNA as a novel contribution. Our novelty is the model-fair
+multi-architecture protocol, the gradient-free decision-based attack, the physical-
+realizability enforcer, and the software-receiver (FGI-GSRx) corpus.
+
 References
 ----------
 - Kaplan & Hegarty (2017): Understanding GPS/GNSS, 3rd ed.
 - Psiaki & Humphreys (2016): GNSS Spoofing and Detection. Proc. IEEE.
+- An, Jang & Lee (2025): Adversarial Evasion Attacks on SVM-Based GPS Spoofing
+  Detection Systems. Sensors 25(19):6062. doi:10.3390/s25196062
 """
 
 import numpy as np

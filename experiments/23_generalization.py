@@ -98,8 +98,26 @@ def block_val(idx_train, df, val_frac=0.15, purge=20):
     return tr, va
 
 
-def eval_fold(df, feats, tr_idx, te_idx, with_dl):
+def _subsample(idx, df, n, seed=42):
+    """Stratified subsample of an index array (keeps both classes); for --smoke."""
+    if n is None or len(idx) <= n:
+        return idx
+    y = df.loc[idx, 'label'].values
+    rng = np.random.default_rng(seed)
+    parts = []
+    for c in np.unique(y):
+        ci = idx[y == c]
+        k = min(len(ci), max(2, int(round(n * (y == c).mean()))))
+        parts.append(rng.choice(ci, k, replace=False))
+    return np.concatenate(parts)
+
+
+def eval_fold(df, feats, tr_idx, te_idx, with_dl, epochs=None, max_n=None):
     tr, va = block_val(tr_idx, df)
+    if max_n is not None:                       # --smoke: shrink the fold to run fast
+        tr = _subsample(tr, df, max_n)
+        va = _subsample(va, df, max(200, max_n // 5))
+        te_idx = _subsample(te_idx, df, max_n)
     Xtr = df.loc[tr, feats].values.astype(np.float64); ytr = df.loc[tr, 'label'].values.astype(int)
     Xva = df.loc[va, feats].values.astype(np.float64); yva = df.loc[va, 'label'].values.astype(int)
     Xte = df.loc[te_idx, feats].values.astype(np.float64); yte = df.loc[te_idx, 'label'].values.astype(int)
@@ -121,6 +139,8 @@ def eval_fold(df, feats, tr_idx, te_idx, with_dl):
         Xte_f = sc.transform(Xte).astype(np.float32)
         for name, (cls, cfg) in DL.items():
             c = get_config(cfg); c['input_dim'] = Xtr_f.shape[1]
+            if epochs is not None:
+                c['epochs'] = epochs
             m = cls(input_dim=Xtr_f.shape[1], config=c); m.build_model()
             m.train(Xtr_f, ytr, X_val=Xva_f, y_val=yva)
             tau = tau_for(yva, pos(m.predict_proba(Xva_f)))
@@ -135,7 +155,14 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--classical-only', action='store_true',
                     help='skip the (GPU-heavy) per-fold DL retraining')
+    ap.add_argument('--smoke', action='store_true',
+                    help='fast sanity: 1 cross-scenario + 1 leave-PRN fold, '
+                         'subsampled, few epochs -> generalization_smoke.csv')
     args = ap.parse_args()
+
+    smoke = args.smoke
+    sm_epochs = 2 if smoke else None
+    sm_maxn = 12000 if smoke else None
 
     df, feats = load_texbat_track(verbose=True, validate=True)
     df = df.reset_index(drop=True)
@@ -161,22 +188,27 @@ def main():
     out = []
 
     spoofed = sorted(s for s in df['scenario'].unique() if s != 'cleanstatic')
+    if smoke:
+        spoofed = spoofed[:1]
     for hold in spoofed:
         te = df.index[df['scenario'] == hold].to_numpy()
         tr = df.index[df['scenario'] != hold].to_numpy()
         print(f"\n[cross-scenario] holdout={hold}  train={len(tr):,} test={len(te):,}")
-        for r in eval_fold(df, feats, tr, te, with_dl):
+        for r in eval_fold(df, feats, tr, te, with_dl, epochs=sm_epochs, max_n=sm_maxn):
             r.update(protocol='cross_scenario', holdout=hold); out.append(r)
 
-    for hold in sorted(df['prn'].unique()):
+    prns = sorted(df['prn'].unique())
+    if smoke:
+        prns = prns[:1]
+    for hold in prns:
         te = df.index[df['prn'] == hold].to_numpy()
         tr = df.index[df['prn'] != hold].to_numpy()
         print(f"[leave-PRN] holdout PRN={hold}  train={len(tr):,} test={len(te):,}")
-        for r in eval_fold(df, feats, tr, te, with_dl):
+        for r in eval_fold(df, feats, tr, te, with_dl, epochs=sm_epochs, max_n=sm_maxn):
             r.update(protocol='leave_prn', holdout=int(hold)); out.append(r)
 
     res = pd.DataFrame(out)
-    outp = TABLES_DIR / 'generalization.csv'
+    outp = TABLES_DIR / ('generalization_smoke.csv' if smoke else 'generalization.csv')
     res.to_csv(outp, index=False)
     print(f"\nWrote {outp}  ({len(res)} rows)")
     if not res.empty:

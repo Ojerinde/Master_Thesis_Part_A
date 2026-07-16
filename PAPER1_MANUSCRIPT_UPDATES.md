@@ -181,10 +181,40 @@ GNSS narrative (S.10 reframe). Full register in this session's audit table.
 Clean build at `manuscript/Satellite_Navigation/` (sn-jnl.cls + sn-basic.bst +
 references.bib copied from GPS_Solutions_sn). `main.tex` + `sections/*.tex`; compiles
 via pdflatex->bibtex->pdflatex x2, 0 undefined citations.
-- TITLE (final): "No Architecture Is Safe: Adversarial Vulnerability of Machine-Learning
-  GNSS Spoofing Detectors to Physically Realizable Attacks" (short: "Adversarial
-  Vulnerability of GNSS Spoofing Detectors"). Dropped "model-fair" from title (keep it
-  as a methods descriptor only).
+- TITLE (final, 2026-07-16): "Adversarial Vulnerability of Machine-Learning GNSS
+  Spoofing Detectors to Physically Realizable Attacks" (short: "Adversarial
+  Vulnerability of GNSS Spoofing Detectors"). Dropped the "No Architecture Is Safe:"
+  hook (too informal/overclaiming for this journal) and "model-fair" (methods
+  descriptor only). Alt on request: "Cross-Architecture Adversarial Vulnerability...".
+- FIGURE 1 = methodological_backbone.jpeg (pipeline schematic F1) -> copied to
+  figures/fig01_pipeline.jpg, placed in the Introduction, compiles.
+- DEFENSE (Paper 1, RUN pending; inclusion decided by the result). experiments/24_defense.py
+  now does PROPER Madry PGD adversarial training (cite madry2018towards): on-the-fly
+  per-batch PGD inner-max + outer min, Adam weight-decay 5e-4, and EARLY STOPPING on a
+  ROBUST validation metric (spoof recall under PGD at recall-0.95) to defeat robust
+  overfitting (cite rice2020overfitting -- early-stopped PGD-AT matches TRADES etc.).
+  The first (static-augmentation) version made robustness WORSE; the proper version
+  makes AT clearly help -> use ONLY the proper version. Evaluated against the FULL suite
+  applicable to DL targets (FGSM, PGD, DLSA/SNA/TPA, and the gradient-free DECISION-BASED
+  boundary attack in the same [0,1] space as the main results). Records clean FAR per
+  variant (so a high-FAR "trivially robust" model is not misread). NOT the certified
+  GNSS-Shield defense (Paper 2, still RED [[project_wp2_done]]).
+  SMOKE finding (undertrained, indicative): AT lifts PGD recall (CNN-1D @0.2 0.755->0.920)
+  but the DECISION-BASED attack still succeeds vs the AT model (CNN-1D ASR 0.63 @0.2, 1.0
+  unbounded) -> the coherent story: empirical AT hardens the gradient surface, not the
+  boundary; certified defense (Paper 2) still needed. CONFIRM on the full GPU run before
+  writing. Runs via run_gpu_experiments.py --with-defense; separate output file
+  defense_baseline.csv (generalization.csv stays separate); both downloaded from Kaggle.
+  Rice/Madry added to references.bib.
+- NOVELTIES to weave into Methods/Results (coherent framing, mostly free): (1) the
+  coupling-aware realizability enforcer as a NAMED contribution (C/N0~correlator-power
+  projection; F9 figure); (2) DLSA/SNA/TPA reframed as observable-domain instantiations
+  of An et al. (2025) attacks, honest NEGATIVE result = ineffective within a realizable
+  budget (ASR<=0.05), sharpens the threat model, cite an2025adversarial, NO novelty
+  claim on the names; (3) two-operating-point diagnostic (recall-0.95 + FAR-0.05) ->
+  XGBoost/LightGBM/DecisionTree cannot reach FAR<=0.05; (4) decision-based min-Linf
+  fragility ranking (GradientBoosting most fragile despite best clean F1); (5)
+  independent reproduction of Song 2026 generalization collapse on a different receiver.
 - DONE: front matter (abstract lean-style, 6 keywords), Introduction (sec:intro,
   4-item contributions), Related Work (sec:related; 4 subsections; positions vs
   Song 2026 = corroborate premise + extend to adversarial axis).
