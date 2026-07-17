@@ -112,7 +112,7 @@ def _subsample(idx, df, n, seed=42):
     return np.concatenate(parts)
 
 
-def eval_fold(df, feats, tr_idx, te_idx, with_dl, epochs=None, max_n=None):
+def eval_fold(df, feats, tr_idx, te_idx, with_dl, epochs=None, max_n=None, batch_size=None):
     tr, va = block_val(tr_idx, df)
     if max_n is not None:                       # --smoke: shrink the fold to run fast
         tr = _subsample(tr, df, max_n)
@@ -141,6 +141,8 @@ def eval_fold(df, feats, tr_idx, te_idx, with_dl, epochs=None, max_n=None):
             c = get_config(cfg); c['input_dim'] = Xtr_f.shape[1]
             if epochs is not None:
                 c['epochs'] = epochs
+            if batch_size is not None:
+                c['batch_size'] = batch_size
             m = cls(input_dim=Xtr_f.shape[1], config=c); m.build_model()
             m.train(Xtr_f, ytr, X_val=Xva_f, y_val=yva)
             tau = tau_for(yva, pos(m.predict_proba(Xva_f)))
@@ -158,6 +160,21 @@ def main():
     ap.add_argument('--smoke', action='store_true',
                     help='fast sanity: 1 cross-scenario + 1 leave-PRN fold, '
                          'subsampled, few epochs -> generalization_smoke.csv')
+    ap.add_argument('--protocol', choices=['all', 'cross_scenario', 'leave_prn'],
+                    default='all',
+                    help='run only one protocol, to fit a Kaggle 12h session '
+                         '(e.g. run cross_scenario in one commit, download the '
+                         'Output, attach it as input to a second commit, then '
+                         'run leave_prn -- resume picks up from the seeded file)')
+    ap.add_argument('--batch-size', type=int, default=None,
+                    help='override the DL batch size (config default is 32, which '
+                         'badly under-uses a GPU on 150k+ row folds -- 256 or 512 '
+                         'cuts wall-clock substantially with standard-practice risk')
+    ap.add_argument('--prn-limit', type=int, default=None,
+                    help='process at most N NOT-YET-DONE leave-PRN folds this run, '
+                         'then stop, leaving the rest for a future session. For '
+                         'chunking the 11 PRN folds finer than --protocol leave_prn '
+                         'alone if even that does not fit one 12h Kaggle session.')
     args = ap.parse_args()
 
     smoke = args.smoke
@@ -185,31 +202,70 @@ def main():
         print(f"  DL device: {'cuda' if torch.cuda.is_available() else 'cpu'}; "
               f"seeds fixed (42), cudnn deterministic")
 
+    # Checkpointing: a Kaggle GPU session is capped at 12h and each fold here takes
+    # ~1-2h, so a 14-fold run risks being killed mid-run. generalization.csv is
+    # normally written ONCE at the end, which would lose everything. Instead we
+    # write/append after EVERY fold, and on start we load any already-completed
+    # (protocol, holdout) pairs and skip them, so a killed-and-restarted session
+    # resumes instead of repeating finished folds.
+    outp = TABLES_DIR / ('generalization_smoke.csv' if smoke else 'generalization.csv')
+    done = set()
     out = []
+    if outp.exists() and not smoke:
+        prev = pd.read_csv(outp)
+        out = prev.to_dict('records')
+        done = set(zip(prev['protocol'], prev['holdout'].astype(str)))
+        print(f"Resuming: {outp.name} exists with {len(prev)} rows "
+              f"({len(done)} fold(s) already done) -- they will be skipped.")
 
-    spoofed = sorted(s for s in df['scenario'].unique() if s != 'cleanstatic')
+    def checkpoint():
+        pd.DataFrame(out).to_csv(outp, index=False)
+
+    bs = args.batch_size
+    if bs:
+        print(f"  DL batch_size override: {bs} (config default 32 badly "
+              f"under-uses a GPU on these fold sizes)")
+
+    spoofed = ([] if args.protocol == 'leave_prn' else
+              sorted(s for s in df['scenario'].unique() if s != 'cleanstatic'))
     if smoke:
         spoofed = spoofed[:1]
     for hold in spoofed:
+        if ('cross_scenario', str(hold)) in done:
+            print(f"[cross-scenario] holdout={hold}  SKIP (already in {outp.name})")
+            continue
         te = df.index[df['scenario'] == hold].to_numpy()
         tr = df.index[df['scenario'] != hold].to_numpy()
         print(f"\n[cross-scenario] holdout={hold}  train={len(tr):,} test={len(te):,}")
-        for r in eval_fold(df, feats, tr, te, with_dl, epochs=sm_epochs, max_n=sm_maxn):
+        for r in eval_fold(df, feats, tr, te, with_dl, epochs=sm_epochs,
+                           max_n=sm_maxn, batch_size=bs):
             r.update(protocol='cross_scenario', holdout=hold); out.append(r)
+        checkpoint()
+        print(f"  checkpoint written ({len(out)} rows total)")
 
-    prns = sorted(df['prn'].unique())
+    prns = [] if args.protocol == 'cross_scenario' else sorted(df['prn'].unique())
     if smoke:
         prns = prns[:1]
+    elif args.prn_limit is not None:
+        not_done = [h for h in prns if ('leave_prn', str(int(h))) not in done]
+        prns = not_done[:args.prn_limit]
+        remaining = len(not_done) - len(prns)
+        print(f"--prn-limit {args.prn_limit}: processing {len(prns)} PRN fold(s) "
+              f"this run ({prns}), {remaining} remain for a future session.")
     for hold in prns:
+        if ('leave_prn', str(int(hold))) in done:
+            print(f"[leave-PRN] holdout PRN={hold}  SKIP (already in {outp.name})")
+            continue
         te = df.index[df['prn'] == hold].to_numpy()
         tr = df.index[df['prn'] != hold].to_numpy()
         print(f"[leave-PRN] holdout PRN={hold}  train={len(tr):,} test={len(te):,}")
-        for r in eval_fold(df, feats, tr, te, with_dl, epochs=sm_epochs, max_n=sm_maxn):
+        for r in eval_fold(df, feats, tr, te, with_dl, epochs=sm_epochs,
+                           max_n=sm_maxn, batch_size=bs):
             r.update(protocol='leave_prn', holdout=int(hold)); out.append(r)
+        checkpoint()
+        print(f"  checkpoint written ({len(out)} rows total)")
 
     res = pd.DataFrame(out)
-    outp = TABLES_DIR / ('generalization_smoke.csv' if smoke else 'generalization.csv')
-    res.to_csv(outp, index=False)
     print(f"\nWrote {outp}  ({len(res)} rows)")
     if not res.empty:
         print(res.groupby(['protocol', 'family'])[['recall', 'f1']].mean().round(4).to_string())

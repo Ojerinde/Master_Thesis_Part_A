@@ -108,10 +108,12 @@ def asr_of(p_clean, p_adv, y, tau):
     return float(np.mean(pa[cs] == 0)) if cs.sum() else np.nan
 
 
-def build_train(cls, cfg_name, Xtr, ytr, Xv, yv, epochs=None):
+def build_train(cls, cfg_name, Xtr, ytr, Xv, yv, epochs=None, batch_size=None):
     c = get_config(cfg_name); c['input_dim'] = Xtr.shape[1]
     if epochs is not None:
         c['epochs'] = epochs
+    if batch_size is not None:
+        c['batch_size'] = batch_size
     m = cls(input_dim=Xtr.shape[1], config=c); m.build_model()
     m.train(Xtr, ytr, X_val=Xv, y_val=yv)
     return m
@@ -279,6 +281,16 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--smoke', action='store_true',
                     help='fast sanity: 2 models, small subsample, few epochs (CPU ok)')
+    ap.add_argument('--models', default=None,
+                    help='comma-separated subset of the 6 DL models to run this '
+                         'session (e.g. "CNN-1D,LSTM"), to chunk across multiple '
+                         'Kaggle 12h sessions the same way 23_generalization.py '
+                         'does. Default: all not-yet-done models.')
+    ap.add_argument('--batch-size', type=int, default=None,
+                    help='override the DL batch size (config default 32 under-uses '
+                         'a GPU); PGD-AT is ~10x more expensive per epoch than plain '
+                         'training (AT_PGD_STEPS inner steps per batch), so this '
+                         'matters even more here than in 23_generalization.py')
     args = ap.parse_args()
     set_determinism(42)
 
@@ -309,20 +321,51 @@ def main():
         epochs = 3
         tr = rng.choice(len(ytr), min(8000, len(ytr)), replace=False)
         Xtr_s, ytr, Xtr_e = Xtr_s[tr], ytr[tr], Xtr_e[tr]
+    elif args.models:
+        wanted = [m.strip() for m in args.models.split(',')]
+        unknown = [m for m in wanted if m not in DL]
+        if unknown:
+            print(f"Unknown model(s) in --models: {unknown}. Known: {list(DL)}")
+            sys.exit(2)
+        models = {k: DL[k] for k in wanted}
 
+    bs = args.batch_size
+
+    # Checkpointing: PGD-AT is ~10x more expensive per epoch than plain training
+    # (AT_PGD_STEPS inner steps per batch), so all 6 models can easily exceed a
+    # Kaggle 12h session (a timeout kill preserves NOTHING -- see
+    # 23_generalization.py for the same lesson learned). Write after EVERY model
+    # and skip models already present, so --models chunks safely across sessions.
+    outp = TABLES_DIR / ('defense_baseline_smoke.csv' if args.smoke else 'defense_baseline.csv')
     rows = []
+    done_models = set()
+    if outp.exists() and not args.smoke:
+        prev = pd.read_csv(outp)
+        rows = prev.to_dict('records')
+        done_models = set(prev['model'].unique())
+        print(f"Resuming: {outp.name} exists with {len(prev)} rows "
+              f"({len(done_models)} model(s) already done: {sorted(done_models)}) "
+              f"-- they will be skipped.")
+
+    def checkpoint():
+        pd.DataFrame(rows).to_csv(outp, index=False)
+
     if args.smoke:
         at_steps, at_maxep, at_pat = 3, 3, 2
     else:
         at_steps, at_maxep, at_pat = AT_PGD_STEPS, AT_MAX_EPOCHS, AT_PATIENCE
     for name, (cls, cfg) in models.items():
+        if name in done_models:
+            print(f"\n=== {name} ===  SKIP (already in {outp.name})", flush=True)
+            continue
         print(f"\n=== {name} ===", flush=True)
         # undefended baseline (standard training)
-        base = build_train(cls, cfg, Xtr_s, ytr, Xv_s, yv, epochs)
+        base = build_train(cls, cfg, Xtr_s, ytr, Xv_s, yv, epochs, batch_size=bs)
         # defended: proper PGD adversarial training with robust-val early stopping
         deff = adv_train_model(cls, cfg, Xtr_s, ytr, Xv_s, yv, enf, enf_phys, sc,
                                eps=AUG_EPS, pgd_steps=at_steps,
-                               max_epochs=at_maxep, patience=at_pat)
+                               max_epochs=at_maxep, patience=at_pat,
+                               batch=bs or AT_BATCH)
 
         for tag, m in [('none', base), ('adv_train', deff)]:
             tau = tau_for(yv, flat(m.predict_proba(Xv_s)))
@@ -359,11 +402,11 @@ def main():
             print(f"  {name}/{tag}: clean R={rc:.3f}  "
                   f"PGD@0.1 R={pgd[0]['recall'] if pgd else float('nan'):.3f}  "
                   f"Decision@0.1 ASR={db[0]['asr'] if db else float('nan'):.3f}", flush=True)
+        checkpoint()
+        print(f"  checkpoint written ({len(rows)} rows total)", flush=True)
 
     df = pd.DataFrame(rows)
-    out = TABLES_DIR / ('defense_baseline_smoke.csv' if args.smoke else 'defense_baseline.csv')
-    df.to_csv(out, index=False)
-    print(f"\nwrote {out}  ({len(df)} rows)")
+    print(f"\nWrote {outp}  ({len(df)} rows)")
     print("\n-- recall under PGD (undefended vs adv-trained) --")
     print(df[df.attack == 'PGD'].pivot_table(
         index='model', columns=['defense', 'eps'], values='recall').round(3).to_string())

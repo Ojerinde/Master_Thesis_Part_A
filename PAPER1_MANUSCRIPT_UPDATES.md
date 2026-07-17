@@ -206,6 +206,30 @@ via pdflatex->bibtex->pdflatex x2, 0 undefined citations.
   writing. Runs via run_gpu_experiments.py --with-defense; separate output file
   defense_baseline.csv (generalization.csv stays separate); both downloaded from Kaggle.
   Rice/Madry added to references.bib.
+
+- KAGGLE SESSION-LIMIT INCIDENT (2026-07-17): first --with-defense commit ran 23
+  generalization live; fold timings (GPU, batch=32 default): ds2 6204s, ds3 5371s,
+  ds7 4064s, PRN=3 7404s -> ~1.6h/fold avg, 14 folds -> ~26h total, FAR beyond
+  Kaggle's 12h session cap (confirmed via research: raised from 9h->12h). User
+  cancelled at 6.45h/4-of-14-folds. CRITICAL FINDING (verified via research): Kaggle
+  does NOT preserve /kaggle/working on a TIMEOUT kill (only on successful
+  completion) -> naive per-fold checkpointing alone does NOT survive a timeout,
+  only a clean error. FIX (23_generalization.py + run_gpu_experiments.py):
+  (1) per-fold checkpoint/resume via generalization.csv (protocol,holdout) skip-set;
+  (2) NEW --protocol {all,cross_scenario,leave_prn} flag to deliberately chunk into
+  pieces that each COMPLETE inside 12h; (3) NEW --batch-size override (config
+  default is 32 for all 6 DL models -> ~5900 batches/epoch on 150-190k rows, badly
+  under-uses a GPU; notebook default now 256) -- SPEEDUP NOT YET MEASURED (no local
+  GPU), verify on the next Kaggle run; (4) notebook cell "2b" seeds
+  results/tables/generalization.csv from a re-attached PREVIOUSLY-DOWNLOADED Kaggle
+  dataset before running, since a completed run's Output DOES persist and can be
+  carried into the next session's fresh clone (results/tables/ is gitignored, so a
+  fresh clone never has it otherwise). All changes smoke-tested locally (--smoke,
+  --protocol leave_prn, --batch-size 256 all verified error-free), pushed.
+  USER PROCEDURE: run --protocol cross_scenario first (completes, Output persists)
+  -> download generalization.csv -> next session: attach it as input dataset ->
+  cell 2b seeds it -> run --protocol leave_prn (resumes/chunks as needed).
+
 - NOVELTIES to weave into Methods/Results (coherent framing, mostly free): (1) the
   coupling-aware realizability enforcer as a NAMED contribution (C/N0~correlator-power
   projection; F9 figure); (2) DLSA/SNA/TPA reframed as observable-domain instantiations

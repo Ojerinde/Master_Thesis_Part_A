@@ -37,11 +37,6 @@ sys.path.insert(0, str(ROOT))
 from config.paths import TABLES_DIR                             # noqa: E402
 
 LOG_DIR = TABLES_DIR / '_gpu_logs'
-
-SMOKE_CORE = [('23_generalization.py', ['--smoke'], 'generalization smoke (1+1 folds)')]
-SMOKE_DEF  = [('24_defense.py',        ['--smoke'], 'defense smoke (2 DL models)')]
-FULL_CORE  = [('23_generalization.py', [], 'full generalization (DL folds) -> generalization.csv')]
-FULL_DEF   = [('24_defense.py',        [], 'diagnostic defense baseline -> defense_baseline.csv')]
 # ONLY the smoke files these stages create. Not Paper-2 smoke files.
 SMOKE_ARTIFACTS = ['generalization_smoke.csv', 'defense_baseline_smoke.csv']
 
@@ -92,11 +87,39 @@ def main():
                     help='also run the diagnostic defense baseline (24). OFF by '
                          'default: generalization (23) is the solid, low-risk run; '
                          'the defense outcome needs review before inclusion.')
+    ap.add_argument('--protocol', choices=['all', 'cross_scenario', 'leave_prn'],
+                    default='all',
+                    help='forwarded to 23_generalization.py -- run one protocol '
+                         'per Kaggle session so each commit completes inside the '
+                         '12h cap (a timeout kill does NOT preserve any output; '
+                         'a completed run does). generalization.csv accumulates '
+                         'across sessions via its own resume/skip logic.')
+    ap.add_argument('--batch-size', type=int, default=None,
+                    help='forwarded to 23_generalization.py and 24_defense.py -- '
+                         'DL batch size (config default 32 under-uses a GPU)')
+    ap.add_argument('--models', default=None,
+                    help='forwarded to 24_defense.py -- comma-separated subset of '
+                         'the 6 DL models, to chunk the defense run across sessions')
     args = ap.parse_args()
     t0 = time.time()
 
-    smoke_steps = SMOKE_CORE + (SMOKE_DEF if args.with_defense else [])
-    full_steps = FULL_CORE + (FULL_DEF if args.with_defense else [])
+    gen_full_args = [] if args.protocol == 'all' else ['--protocol', args.protocol]
+    def_full_args = []
+    if args.batch_size:
+        gen_full_args += ['--batch-size', str(args.batch_size)]
+        def_full_args += ['--batch-size', str(args.batch_size)]
+    if args.models:
+        def_full_args += ['--models', args.models]
+
+    smoke_core = [('23_generalization.py', ['--smoke'], 'generalization smoke (1+1 folds)')]
+    smoke_def = [('24_defense.py', ['--smoke'], 'defense smoke (2 DL models)')]
+    full_core = [('23_generalization.py', gen_full_args,
+                  f'generalization (protocol={args.protocol}) -> generalization.csv')]
+    full_def = [('24_defense.py', def_full_args,
+                 'diagnostic defense baseline -> defense_baseline.csv')]
+
+    smoke_steps = smoke_core + (smoke_def if args.with_defense else [])
+    full_steps = full_core + (full_def if args.with_defense else [])
 
     if not args.skip_smoke:
         for i, (s, a, d) in enumerate(smoke_steps, 1):
