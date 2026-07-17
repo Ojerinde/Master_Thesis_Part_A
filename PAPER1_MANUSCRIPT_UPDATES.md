@@ -230,6 +230,80 @@ via pdflatex->bibtex->pdflatex x2, 0 undefined citations.
   -> download generalization.csv -> next session: attach it as input dataset ->
   cell 2b seeds it -> run --protocol leave_prn (resumes/chunks as needed).
 
+- ROUND 1 RESULT (2026-07-17, Kaggle T4x2, batch-size=256, --protocol cross_scenario):
+  SUCCESS, 3434.4s total (~57 min) for all 3 folds -- batch-256 gave ~5x speedup vs the
+  batch-32 baseline (18.9 min/fold avg vs ~90 min/fold: ds2 19.4min, ds3 21.3min,
+  ds7 15.9min). REVISED leave_prn estimate: 11 folds x ~19-20min ~= 3.5-4h, likely
+  fits ONE 12h session -> told user to try --protocol leave_prn with PRN_LIMIT=None
+  first (chunk only if it runs long).
+  39 rows written (3 folds x 13 models, BOTH families -- first time deep cross-scenario
+  numbers exist). HEADLINE FINDINGS (scenario-dependent, NOT a flat classical>deep):
+    ds2 (overpowered, hardest): near-total collapse ALL models. Best classical KNN
+      0.473, best deep BiLSTM 0.269. Worst: RandomForest 0.090(!), TCN 0.145.
+    ds3 (matched-power): moderate. Best classical KNN 0.744, best deep CNN-1D 0.631.
+    ds7 (phase-aligned): BEST generalization overall, and CNN-1D 0.844 + TCN 0.840
+      (deep) BEAT every classical model (best classical XGBoost 0.786).
+  Cross-scenario means: classical recall=0.5283/F1=0.6468, deep recall=0.4420/
+  F1=0.5373 (deep worse ON AVERAGE, but ds7 shows deep CAN generalize best -> the
+  paper's claim must be scenario-dependent, not a blanket family ranking).
+  THIRD independent axis for the "no family wins" thesis: (1) clean detection
+  (F1 0.74-0.84 span, no dominance), (2) adversarial robustness (decision-based,
+  worst-case recall~0 for all 13), (3) NOW cross-scenario generalization (no family
+  dominates all 3 held-out scenarios either). Same conclusion, three separate
+  experiments -> this is the coherence a 12.4 reviewer rewards.
+  CANONICAL-SOURCE note: this Kaggle-run generalization.csv (batch=256, GPU) will
+  SUPERSEDE the earlier local classical-only reference numbers (recall 0.5240 vs
+  0.5283 here -- tiny env/library drift, not a bug) once leave_prn completes. Cite
+  ONLY this file's final numbers in the manuscript, not the old local partial run.
+  SCOPE (state factually in Methods, NOT as a Discussion "limitation" vs a named
+  competitor -- user correction 2026-07-17, see [[writing_style_preference]]):
+  cross-scenario testing covers 3 held-out scenarios (ds2/ds3/ds7, static TEXBAT
+  family; ds5/ds6 excluded for the static/dynamic confound). This is a plain
+  methodology fact, already fully disclosed by stating the number -- do NOT add an
+  explicit comparison to Song et al.'s 10 scenarios. Depth (13 models, decision-based
+  attack, physical realizability) is the differentiator to emphasize; if a reviewer
+  raises scenario count, answer it in revision, don't pre-concede it in the manuscript.
+  STILL PENDING: leave-PRN for the 6 deep models (Round 2, in progress) -- needed
+  to complete the 3-view protocol and build Figure F8.
+
+- GENERALIZATION COMPLETE (2026-07-17). Round 2 (--protocol leave_prn, PRN_LIMIT=None)
+  finished ALL 11 PRN folds in one session (no further chunking needed -- confirms the
+  batch=256 speedup holds at scale). generalization.csv is now FINAL: 182 rows =
+  39 (cross_scenario, 3x13) + 143 (leave_prn, 11x13). This is the canonical file --
+  cite only this. THREE-VIEW PROTOCOL DONE for all 13 models; ready to build Figure F8.
+  Leave-PRN headline findings (per-architecture, not per-family, failure -- reinforces
+  the cross-scenario finding and gives a 4th data point for "no family is safe"):
+    PRN=19 held out: BiLSTM collapses to 0.006(!) recall, Transformer 0.075, LSTM
+      0.081 -- while CNN-1D 0.873, CNN-LSTM 0.903, TCN 0.811 hold up FINE on the SAME
+      fold. Same "family" (deep), opposite outcomes.
+    PRN=7 held out: GradientBoosting collapses to 0.028(!), XGBoost 0.072 -- while
+      KNN 0.997 and every deep model (>=0.97) hold up fine on the SAME fold.
+  Most other PRNs (6,10,11,16,20,23,30) show near-ceiling recall (>0.9) for nearly all
+  models -- cross-satellite generalization is broadly strong on this corpus EXCEPT for
+  specific problematic satellites (3,7,13,19), and which satellite breaks which model
+  is architecture-specific, not family-specific. Strong material for F8 panel (b)
+  (PRN-level F1 distribution) -- show the spread/outliers, not just the mean.
+  NEXT: defense (24_defense.py, Round N) is now the ONLY remaining data-generation
+  step before all figures (F2-F9) can be built and Results/Discussion written.
+
+- DEFENSE RUN 1 INVALID + FIX (2026-07-17). First full defense run (defense_baseline.csv,
+  all 6 DL) produced DEGENERATE adv_train models: clean FAR 0.89-1.0 (CNN-1D/LSTM/
+  CNN-LSTM = 1.0 exactly), i.e. the adversarially-trained models collapsed to a trivial
+  "predict spoof for everything" classifier. Their apparent perfect robustness (ASR=0)
+  was an ARTIFACT -- no authentic region means no spoof can be flipped to authentic.
+  ROOT CAUSE (my bug, not a property of AT): the robust-val early-stopping metric was
+  spoof RECALL under PGD, which is maximized by the all-spoof classifier -> selection
+  rewarded degeneracy. The `far` column I added as a guardrail is what caught it
+  (without it we'd have wrongly reported "AT gives perfect robustness"). FIX: changed
+  the selection metric to robust BALANCED ACCURACY at tau=0.5 (mean of TPR,TNR; caps
+  the all-spoof collapse at 0.5) -- the standard Madry/Rice robust-accuracy selection.
+  Smoke-verified: adv_train FAR now ~= undefended FAR (no degenerate gap), AT improves
+  PGD robustness, decision-based still succeeds (ASR 0.63 @0.2, 1.0 unbounded) = the
+  coherent "AT hardens gradients not the boundary" story. USER MUST RE-RUN the full
+  defense (delete/don't-seed the OLD degenerate defense_baseline.csv first, else the
+  per-model resume logic skips everything). Inclusion decision waits on the valid
+  full-run FAR + decision-based numbers.
+
 - NOVELTIES to weave into Methods/Results (coherent framing, mostly free): (1) the
   coupling-aware realizability enforcer as a NAMED contribution (C/N0~correlator-power
   projection; F9 figure); (2) DLSA/SNA/TPA reframed as observable-domain instantiations

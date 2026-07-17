@@ -138,23 +138,35 @@ def dom_attacks(space, y, enf, fn, eps):
     return out
 
 
-def robust_val_recall(m, Xv_s, yv, enf, enf_phys, sc, eps, steps, tau):
-    """Spoof recall under PGD(eps) on the validation block. This is the model-selection
-    metric that guards against robust overfitting (Rice et al. 2020); selecting on it
-    rather than on clean loss is what makes AT effective."""
+def robust_val_score(m, Xv_s, yv, enf, enf_phys, sc, eps, steps):
+    """Robust BALANCED accuracy under PGD(eps) on the validation block, at the natural
+    0.5 threshold. This is the model-selection metric for early stopping (Rice et al.
+    2020, avoiding robust overfitting).
+
+    IMPORTANT: balanced accuracy = mean(TPR, TNR), NOT spoof recall. Selecting on spoof
+    recall alone is degenerate: a classifier that predicts 'spoof' for everything has
+    perfect recall under any attack, so recall-based selection rewards a trivial
+    all-positive collapse (FAR -> 1). Balanced accuracy caps that collapse at 0.5
+    (TNR=0), forcing early stopping to prefer a checkpoint that separates both classes
+    robustly. Madry/Rice-style AT selects on robust accuracy for exactly this reason."""
     adv = PGDAttack(m, epsilon=eps, num_iter=steps, random_start=True,
                     gnss_enforcer=enf).generate(Xv_s, yv)
     adv = couple_scaled(adv, sc, enf_phys)
     pa = flat(m.predict_proba(adv.astype(np.float32)))
-    return recall_score(yv, (pa >= tau).astype(int), zero_division=0)
+    pred = (pa >= 0.5).astype(int)
+    tpr = float(np.mean(pred[yv == 1] == 1)) if (yv == 1).any() else 0.0
+    tnr = float(np.mean(pred[yv == 0] == 0)) if (yv == 0).any() else 0.0
+    return 0.5 * (tpr + tnr)
 
 
 def adv_train_model(cls, cfg_name, Xtr_s, ytr, Xv_s, yv, enf, enf_phys, sc,
                     eps, pgd_steps, max_epochs, patience, batch=AT_BATCH):
     """PGD adversarial training (Madry 2018) with robust-validation early stopping
     (Rice 2020). Adversarial examples are regenerated on the fly each mini-batch
-    against the current weights; the checkpoint with the best robust-val spoof recall
-    is restored. Uses the model's own nn.Module so no model file is modified."""
+    against the current weights; the checkpoint with the best robust-val BALANCED
+    ACCURACY is restored (balanced accuracy, not spoof recall, so early stopping
+    cannot be gamed by an all-spoof collapse). Uses the model's own nn.Module so no
+    model file is modified."""
     import torch
     import torch.nn as nn
     import copy
@@ -185,15 +197,16 @@ def adv_train_model(cls, cfg_name, Xtr_s, ytr, Xv_s, yv, enf, enf_phys, sc,
             opt.zero_grad()
             loss = crit(net(xb), yb.to(dev))
             loss.backward(); opt.step()
-        # robust-val model selection at the recall-0.95 operating point
+        # robust-val model selection by BALANCED ACCURACY (degeneracy-proof; see
+        # robust_val_score). Prevents the all-spoof collapse that a recall-only
+        # metric rewards.
         net.eval()
-        tau = tau_for(yv, flat(m.predict_proba(Xv_s)))
-        rob = robust_val_recall(m, Xv_s, yv, enf, enf_phys, sc, eps, pgd_steps, tau)
+        rob = robust_val_score(m, Xv_s, yv, enf, enf_phys, sc, eps, pgd_steps)
         if rob > best_rob:
             best_rob, best_state, ctr = rob, copy.deepcopy(net.state_dict()), 0
         else:
             ctr += 1
-        print(f"    AT epoch {epoch + 1}: robust-val recall={rob:.3f} "
+        print(f"    AT epoch {epoch + 1}: robust-val bal-acc={rob:.3f} "
               f"(best={best_rob:.3f}, patience {ctr}/{patience})", flush=True)
         if ctr >= patience:
             break
@@ -407,6 +420,9 @@ def main():
 
     df = pd.DataFrame(rows)
     print(f"\nWrote {outp}  ({len(df)} rows)")
+    print("\n-- clean FAR (adv_train near 1.0 = DEGENERATE all-spoof collapse, invalid) --")
+    print(df[df.attack == 'clean'].pivot_table(
+        index='model', columns='defense', values='far').round(3).to_string())
     print("\n-- recall under PGD (undefended vs adv-trained) --")
     print(df[df.attack == 'PGD'].pivot_table(
         index='model', columns=['defense', 'eps'], values='recall').round(3).to_string())
