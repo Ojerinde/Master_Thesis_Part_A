@@ -1,0 +1,109 @@
+%% Satellite Navigation (SpringerOpen) -- Paper 1
+%% Springer Nature sn-jnl class, author-date (sn-basic) reference style.
+%% Build: pdflatex main -> bibtex main -> pdflatex main x2
+%% Style rule for this manuscript: lean prose. No em dashes. No filler
+%% adjectives or adverbs. No inline "A, B, and C" lists in running text.
+
+\documentclass[pdflatex,sn-basic]{sn-jnl}
+
+%%%% Standard packages
+\usepackage{graphicx}
+\usepackage{multirow}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{amsthm}
+\usepackage{mathrsfs}
+\usepackage[title]{appendix}
+\usepackage{xcolor}
+\usepackage{textcomp}
+\usepackage{booktabs}
+\usepackage{bm}
+\usepackage{siunitx}
+\usepackage{xspace}
+\usepackage{url}
+
+%% Theorem styles
+\theoremstyle{thmstyleone}
+\newtheorem{theorem}{Theorem}
+\newtheorem{proposition}[theorem]{Proposition}
+\theoremstyle{thmstyletwo}
+\newtheorem{example}{Example}
+\newtheorem{remark}{Remark}
+\theoremstyle{thmstylethree}
+\newtheorem{definition}{Definition}
+
+%% Custom commands
+\newcommand{\eg}{\textit{e.g.}\xspace}
+\newcommand{\ie}{\textit{i.e.}\xspace}
+\newcommand{\etal}{\textit{et al.}\xspace}
+\newcommand{\cnzero}{$C/N_0$\xspace}
+\newcommand{\linf}{\ell_\infty}
+\newcommand{\eps}{\varepsilon}
+
+\raggedbottom
+
+\begin{document}
+
+\title[Adversarial Vulnerability of GNSS Spoofing Detectors]{Adversarial Vulnerability of Machine-Learning GNSS Spoofing Detectors to Physically Realizable Attacks}
+
+\author[1]{\fnm{Joel Segun} \sur{Ojerinde}}
+\author*[1]{\fnm{Wasiu Akande} \sur{Ahmed}}\email{ahmedwasiu24@buaa.edu.cn}
+\author[2]{\fnm{Akinyinka Olukunle} \sur{Akande}}
+
+\affil*[1]{\orgdiv{Regional Centre for Space Science and Technology Education in Asia and the Pacific (RCSSTEAP), Beihang Hangzhou International Innovation Institute}, \orgname{Beihang University}, \orgaddress{\city{Hangzhou}, \state{Zhejiang}, \country{China}}}
+
+\affil[2]{\orgname{Federal University of Technology}, \orgaddress{\city{Owerri}, \country{Nigeria}}}
+
+\abstract{Machine-learning detectors are increasingly proposed to protect Global
+Navigation Satellite System (GNSS) receivers against spoofing, yet their behaviour
+under a deliberate, adaptive adversary is not well established. This paper reports an
+adversarial evaluation of thirteen detectors, six deep networks and seven classical
+models, on
+receiver observables produced by an open software-defined receiver from the Texas
+Spoofing Test Battery. Every detector is placed at a common operating point of clean
+recall 0.95 and is attacked by one shared suite that includes white-box gradient
+attacks, multi-surrogate transfer, three GNSS domain manipulations and a
+gradient-free decision-based attack. Each adversarial example is projected onto the
+physically realizable set so that no reported attack corresponds to a signal the
+spoofer could not transmit. On clean data no family dominates, with $F_1$ between
+0.74 and 0.84. Under the decision-based attack every detector, differentiable or not,
+is driven to a worst-case spoof recall near zero. The boosted-tree detectors require
+the smallest perturbation to evade, and the detector with the strongest clean
+performance is the most fragile, so resistance to a gradient attack does not by itself
+indicate robustness. GNSS manipulations bounded to the same realizable budget leave
+detection almost unchanged while learned perturbations do not, which places the threat
+in the learned attack rather than in simple signal shaping. Cross-scenario evaluation shows detection calibrated to 0.95
+recall falling to a mean of 0.52 on an unseen overpowered attack, and cross-satellite
+failure is specific to a detector and a satellite rather than to a family. Architecture
+choice therefore
+trades detection utility against robustness rather than providing a security
+guarantee, and robustness has to be engineered rather than assumed.}
+
+\keywords{GNSS spoofing, Adversarial robustness, Machine learning, Software-defined
+receiver, Resilient PNT, Decision-based attack}
+
+\maketitle
+
+\input{sections/introduction}
+\input{sections/related_work}
+\input{sections/signal_model}
+\input{sections/threat_model}
+\input{sections/methods}
+\input{sections/results}
+\input{sections/discussion}
+\input{sections/conclusion}
+
+\backmatter
+
+\bmhead{Data and code availability}
+The Texas Spoofing Test Battery recordings are distributed by the University of Texas
+at Austin Radionavigation Laboratory. The FGI-GSRx software-defined receiver is
+released under the GPLv3 licence. The receiver observables and the evaluation code that
+support the findings of this study are available from the corresponding author on
+reasonable request.
+
+\bmhead{Competing interests}
+The authors declare no competing interests.
+
+\bibliography{references}
+
+\end{document}

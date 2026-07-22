@@ -1,0 +1,92 @@
+\section{Related Work}
+\label{sec:related}
+
+\subsection{Learning-based spoofing detection}
+\label{sec:rw_learning}
+
+Signal-processing anti-spoofing tests operate on quantities the tracking loops
+already expose. Automatic gain control and received-power monitoring flag the power
+advantage that many spoofers introduce \citep{akos2012gnss}, and correlator-domain
+tests together with checks on the consistency of Doppler and code measurements target
+the distortion a counterfeit signal leaves on the correlation function
+\citep{psiaki2016gnss}. Each test is tied to one physical signature and can be evaded
+by an attacker who holds that signature within its nominal range, which motivated the
+move to detectors that learn a joint decision across many observables.
+
+Data-driven detectors now span both deep and classical model families. Among deep
+models, \citet{borhanidarian2024deep} classify spoofing from cross-ambiguity-function
+images with a parallelized deep network and report strong detection at moderate to high
+signal-to-noise ratio, \citet{sung2022cnn} apply a one-dimensional convolutional network
+to signal-strength features, \citet{romaniuc2025lstm} train a long
+short-term memory model on receiver-independent exchange data and report an $F_1$ near
+0.90, and \citet{yang2025deep} combine a bidirectional recurrent network, attention
+and convolution for a small uncrewed platform and report a weighted $F_1$ of 0.97.
+Among classical models, \citet{chen2022svm} use a support vector machine,
+\citet{mahroof2024ml} use $k$-nearest neighbours on the TEXBAT ds3 and ds8 scenarios,
+and \citet{jullian2022deep} compare a multilayer perceptron with a recurrent model.
+Reported detection accuracy in this line of work is consistently high, which reflects
+evaluation on a fixed set of attacks with the training and test data drawn from the
+same conditions.
+
+\subsection{Generalization and physics-informed detection}
+\label{sec:rw_generalization}
+
+A separate concern is whether a detector trained on one set of attacks still works on
+attacks it has not seen. \citet{iqbal2024deep} motivate a one-class framework by the
+observation that supervised detectors fail on attack vectors absent from the training
+distribution, and \citet{chen2025cgan} address unknown scenarios by augmenting
+engineered features with a conditional generative model before classification.
+\citet{li2025realtime} target real-time time-spoofing detection through a
+feature-processing pipeline. \citet{song2026generalized} report that standard learned
+detectors lose accuracy on unseen spoofing scenarios, and that embedding
+the code-carrier consistency of authentic signals as a training constraint keeps an
+accuracy retention rate above 0.92 across ten held-out scenarios, establishing that a
+physical invariant used as an inductive bias improves generalization across attack
+conditions on clean signals. Robustness to an adversary that adapts the spoofing signal
+against the detector is a distinct axis, and it is the axis this study evaluates.
+
+\subsection{Adversarial robustness and gradient masking}
+\label{sec:rw_adversarial}
+
+Machine-learning classifiers can be driven to a wrong decision by a perturbation that
+is small under the chosen norm \citep{szegedy2014intriguing}. Gradient methods
+construct such perturbations efficiently, from the single-step sign method
+\citep{goodfellow2015explaining} to iterative projected gradient descent
+\citep{madry2018towards} and the optimization attack of
+\citet{carlini2017evaluating}. Perturbations often transfer between models, so an
+attacker without access to the target can craft examples on a surrogate
+\citep{papernot2016transferability,liu2017delving}. When the target exposes no useful
+gradient, decision-based attacks reach comparable strength using only the hard output
+label \citep{brendel2018decision,chen2020hopskipjump}. This last point is central to a
+fair comparison across model families. A non-differentiable model such as a tree
+ensemble or a nearest-neighbour classifier resists gradient attacks by construction,
+and reading that resistance as robustness is the error that
+\citet{athalye2018obfuscated} name gradient masking. The recommended practice is to
+attack every model with a method matched to its interface, including a gradient-free
+attack, before any robustness claim \citep{carlini2019evaluating}.
+
+Adversarial examples have been demonstrated against machine-learning systems that
+consume physical measurements, including audio \citep{carlini2018audio}, automotive
+sensor fusion \citep{cao2021invisible}, synthetic-aperture radar
+\citep{lin2023sar} and power-system monitoring \citep{cheng2022adversarial}. In each
+setting the attacker cannot write arbitrary values into the feature vector and must
+instead induce them through a physical channel, so a credible evaluation constrains
+the perturbation to what that channel can produce. The same requirement applies to
+GNSS, where the spoofer controls the transmitted signal but not the receiver
+observables directly.
+
+\subsection{Adversarial evaluation in the GNSS setting}
+\label{sec:rw_gap}
+
+Adversarial robustness of GNSS spoofing detectors is less explored than detection
+accuracy. \citet{an2025adversarial} demonstrate evasion of a support vector machine
+operating on reported position, showing that a detector with high nominal accuracy can
+be defeated by an adversary that shapes its input, and identify the robustness of other
+detector architectures under black-box conditions as an open question.
+
+The evaluation reported here addresses that question directly. It covers thirteen
+detectors spanning both families, places them at a shared operating point, applies one
+attack suite to all of them including a gradient-free decision-based attack that
+measures vulnerability without relying on gradients, and projects every adversarial
+example onto the physically realizable set so that each reported attack corresponds to
+a signal a spoofer could transmit.

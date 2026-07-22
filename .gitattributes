@@ -1,0 +1,13 @@
+# Normalize text line endings in the repo; keep binaries intact.
+* text=auto
+*.tex text
+*.bib text
+*.py text
+*.md text
+*.cls text
+*.bst text
+*.sty text
+
+*.pdf binary
+*.png binary
+*.jpg binary

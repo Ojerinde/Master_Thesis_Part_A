@@ -1,0 +1,79 @@
+\section{Discussion}
+\label{sec:discussion}
+
+The results carry one message for resilient positioning, navigation and timing: a
+machine-learning spoofing detector cannot be assumed robust because it is accurate, and
+its architecture does not decide the question. On clean data no family dominates, and
+under a matched attack every family is defeated. Architecture choice buys a trade-off
+between detection utility and robustness, not a security guarantee. The trade-off is
+direct: Figure~\ref{fig:inversion} ranks the detectors by clean $F_1$ and by the
+perturbation needed to evade them, and the two orderings are close to reversed, so the
+detector that is strongest on clean data is among the weakest under attack. The
+nearest-neighbour detector is the clearest instance, since it resists the
+decision-based attack more than any other detector yet has the weakest clean $F_1$ and
+the highest false-alarm rate, so its robustness is bought at a utility cost that a
+fielded integrity monitor could not accept. Figure~\ref{fig:tradeoff} places all four
+axes side by side, and no detector scores well on all of them: strength on clean
+detection, on the false-alarm rate, on adversarial robustness and on cross-scenario
+recall are in tension rather than aligned.
+
+\begin{figure}[tb]
+\centering
+\includegraphics[width=\linewidth]{figures/fig10_rank_inversion.pdf}
+\caption{Detector rank by clean $F_1$ (left) against rank by the median $L_\infty$
+perturbation needed to evade the decision-based attack (right). The two orderings are
+close to reversed: the detectors strongest on clean data are the easiest to evade, and
+the nearest-neighbour detector moves from weakest on clean data to hardest to evade.}
+\label{fig:inversion}
+\end{figure}
+
+\begin{figure}[tb]
+\centering
+\includegraphics[width=\linewidth]{figures/fig11_tradeoff_parallel.pdf}
+\caption{Each detector across four axes, normalised so higher is better on every axis:
+clean $F_1$, one minus the false-alarm rate, adversarial robustness and cross-scenario
+recall. No detector scores well on all four. The gradient-boosting model is best on
+clean detection and worst on robustness, and the nearest-neighbour model is the
+reverse.}
+\label{fig:tradeoff}
+\end{figure}
+
+The finding that matters most for how these detectors are evaluated is that
+non-differentiability is not robustness. A tree ensemble or a nearest-neighbour
+classifier denies a gradient attack a useful gradient, so its survival under such an
+attack carries no information about its robustness. Measured through the decision
+boundary instead, the ordering reverses: the boosted-tree detectors are the
+easiest to evade, and the gradient-boosting model that is strongest on clean data is
+the most fragile of all. Any future evaluation of a GNSS spoofing detector that claims
+robustness for a non-differentiable model should include a gradient-free attack for
+this reason.
+
+The physical-realizability constraint is what makes the threat credible rather than a
+feature-space artifact. Because every adversarial example is projected onto the
+attainable receiver states and the coupling between reported signal quality and
+correlator power is enforced, each reported attack corresponds to a signal a spoofer
+could transmit. Within that constraint the GNSS domain attacks are almost harmless,
+while the learned perturbations succeed, which locates the threat in the learned attack
+rather than in simple signal shaping and shows that the realizability constraint does
+not by itself protect the detector.
+
+Generalization behaves the same way as robustness. Detection calibrated on the mixed
+corpus collapses on an unseen overpowered attack and breaks unpredictably on individual
+satellites, and which condition breaks which detector is not predicted by the family
+label. That the collapse reproduces, on a separate receiver pipeline, the generalization
+loss that \citet{song2026generalized} report for learned detectors on unseen scenarios
+indicates that it is a property of learned spoofing detection rather than of one
+pipeline.
+
+Designing a GNSS spoofing detector with robustness that holds under a matched,
+physically realizable attack is the natural next step. Empirical adversarial training
+and certified approaches such as randomized smoothing are the candidate directions, and
+evaluating whether either restores robustness at an acceptable false-alarm rate is the
+focus of ongoing work. The evidence here sets the requirement that such a defence must
+meet: it has to withstand a gradient-free attacker at a common operating point, not
+merely a transferred gradient attack.
+
+The evaluation covers the static family of the benchmark, with three held-out spoofing
+scenarios and the satellites present in those recordings. Extending the protocol to a
+wider set of scenarios and to dynamic platforms is a natural direction for further work
+and would test whether the conclusions hold across a broader operating envelope.
