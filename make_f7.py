@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 
 HERE = Path(__file__).resolve().parent
 FIGD = HERE / "figures"; FIGD.mkdir(exist_ok=True)
-MAT = HERE.parents[1] / "FGI_Data" / "out" / "trackData_ds7_full.mat"
+MAT = HERE.parents[1] / "data" / "FGI_Data" / "out" / "trackData_ds7_full.mat"
 
 BLUE, VERM, GREEN, INK, MUTED, GRID = "#0072B2", "#D55E00", "#009E73", "#1a1a1a", "#5c5c5c", "#dddddd"
 CM = 1 / 2.54; FULL_W = 16 * CM

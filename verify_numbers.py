@@ -5,7 +5,7 @@ from pathlib import Path
 import pandas as pd
 import numpy as np
 
-REPO = Path(__file__).resolve().parents[1].parent / "gnss_adversarial_research"
+REPO = Path(__file__).resolve().parents[1].parent / "code" / "gnss_adversarial_research"
 TAB = REPO / "results" / "tables"
 
 

@@ -16,7 +16,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 
 HERE = Path(__file__).resolve().parent
-REPO = HERE.parents[1] / "gnss_adversarial_research"
+REPO = HERE.parents[1] / "code" / "gnss_adversarial_research"
 TAB = REPO / "results" / "tables"
 FIGD = HERE / "figures"
 FIGD.mkdir(exist_ok=True)
