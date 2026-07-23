@@ -85,10 +85,13 @@ performance of a deployed system.
 
 The evaluation covers the static family of the benchmark, which is GPS L1 C/A, with
 three held-out spoofing scenarios and the satellites present in those recordings. The
-gradient-masking result and the fragility ordering are properties of the detectors and
-the attack rather than of the signal, so they should carry over to BeiDou B1I or B1C,
-Galileo E1 and multi-frequency receivers, with the realizability enforcer recalibrated
-to the per-signal $C/N_0$-to-power relation. Extending the protocol to a wider set of
+gradient-masking result and the fragility ordering depend on the detectors and
+the attack rather than on the specific signal, which leads us to hypothesise that they
+would persist on other civil signals, such as BeiDou B1I or Galileo E1, and on
+multi-frequency receivers, with the realizability enforcer recalibrated to the per-signal
+$C/N_0$-to-power relation. This is a hypothesis rather than a tested result, since the
+present evidence is confined to GPS L1 C/A, and confirming the carry-over would require
+repeating the protocol on those signals. Extending the protocol to a wider set of
 scenarios, to multi-constellation and multi-frequency observables, and to dynamic
 platforms is a natural direction for further work and would test whether the conclusions
 hold across a broader operating envelope.

@@ -50,9 +50,9 @@ Section~\ref{sec:features}.
 A detector's recall, false-alarm rate and $F_1$ all depend on its decision threshold,
 so a comparison drawn at different thresholds confounds the detector with its operating
 point. We fix one common operating point for every model: the threshold
-$\tau^\star=\max\{\tau: R_\mathrm{val}(\tau)\ge 0.95\}$ that meets a clean-validation
+$\eta^\star=\max\{\eta: R_\mathrm{val}(\eta)\ge 0.95\}$ that meets a clean-validation
 recall floor of 0.95, which is the safety-first choice for an integrity monitor. All
-clean and adversarial metrics are reported at $\tau^\star$. Because the false-alarm
+clean and adversarial metrics are reported at $\eta^\star$. Because the false-alarm
 rate at this recall floor is informative in its own right, we also report a second
 operating point defined by a clean-validation false-alarm ceiling of 0.05, so that a
 high false-alarm rate at the recall floor is visible rather than hidden by the choice
@@ -61,7 +61,7 @@ of threshold.
 \subsection{Attack suite}
 \label{sec:attacks}
 
-Every detector is attacked by one shared suite at $\tau^\star$. The white-box attacks
+Every detector is attacked by one shared suite at $\eta^\star$. The white-box attacks
 are the single-step fast gradient sign method \citep{goodfellow2015explaining} and
 iterative projected gradient descent \citep{madry2018towards}, applied to the
 differentiable deep detectors. For the non-differentiable classical detectors the
@@ -81,7 +81,7 @@ The decisive element of the suite is a gradient-free decision-based boundary att
 applied to every detector \citep{brendel2018decision}. For each correctly detected
 spoofed sample it searches for the smallest $L_\infty$ perturbation, in the min-max
 normalised observable space, that moves the sample across the decision boundary to the
-authentic side at $\tau^\star$. Because the attack uses only the hard decision, it
+authentic side at $\eta^\star$. Because the attack uses only the hard decision, it
 applies uniformly to differentiable and non-differentiable detectors and provides the
 matched measure of vulnerability that a transferred gradient attack cannot. The suite
 characterises $L_\infty$ vulnerability; other norms such as $L_2$ or $L_0$
