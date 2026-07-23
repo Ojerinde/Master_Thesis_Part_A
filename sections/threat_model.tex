@@ -7,19 +7,21 @@ of the detector and its capability to shape the input \citep{biggio2018wild}. Th
 attacker is a spoofer that already transmits counterfeit signals and seeks to convert a
 spoofed observation the detector would flag into one it accepts. The attacker manipulates
 the transmitted signal, which in turn moves the receiver observables within the physical
-limits set out in Section~\ref{sec:signal}. The gradient attacks (FGSM, PGD) and the GNSS
-domain attacks report success at fixed budgets $\varepsilon\in\{0.05,0.10,0.20\}$ in a
-normalised feature space, so the realized budget is comparable across detectors. The
-gradient-free decision-based attack is the exception: rather than test a fixed budget it
-searches for the smallest perturbation that flips each sample, measured as a min-max
-normalised $L_\infty$ distance, and this per-sample minimum is the fragility measure
-reported in Section~\ref{sec:results}. A min-max normalised perturbation has a direct
-physical reading. The carrier-to-noise density ratio ranges over about 57 dB-Hz across
-the training corpus, so a normalised distance of 0.05 bounds its excursion to about
-2.8 dB, close to a doubling of received power, and a distance of 0.20 to about 11 dB,
-comparable to the roughly 10 dB power advantage of an overpowered time-push scenario. The
-fragility of the detectors can therefore be read in decibels of spoofer power rather than
-as an abstract normalised number. Every adversarial
+limits set out in Section~\ref{sec:signal}. The gradient attacks (FGSM, PGD) and their
+transfer variants are bounded by a fixed budget $\varepsilon\in\{0.05,0.10,0.20\}$ in the
+standardised feature space that the deep detectors consume, and the GNSS domain attacks
+apply a fixed budget in each detector's own input space. The gradient-free decision-based
+attack is the exception: rather than test a fixed budget it searches for the smallest
+perturbation that flips each sample, measured as a min-max normalised $L_\infty$ distance,
+and this per-sample minimum is the fragility measure reported in
+Section~\ref{sec:results}. The min-max fragility measure maps directly to physical units.
+The carrier-to-noise density ratio spans about 57 dB-Hz across the training corpus, so the
+most fragile detector, evaded at a median distance near 0.01, falls to a carrier-to-noise
+change of at most about 0.5 dB, while the most robust needs about 0.10, roughly 6 dB. In
+the standardised space the fixed gradient budget of 0.10 corresponds to about 0.5 dB on
+the same observable or about 200 Hz of Doppler. The perturbations that defeat the detectors
+are therefore physically small changes a spoofer can impose rather than abstract normalised
+numbers. Every adversarial
 example is projected onto the physically realizable set by the signal-validity enforcer
 of Section~\ref{sec:method}, including the coupling between reported signal quality and
 correlator power, so no reported attack corresponds to a signal the spoofer could not
