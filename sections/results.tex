@@ -66,10 +66,16 @@ median minimum $L_\infty$ perturbation that evades each detector.
 
 This measure overturns the reading that non-differentiable detectors are robust. The
 gradient-boosting model, which has the best clean $F_1$, is the most fragile of all: a
-median perturbation of 0.009 evades it. The remaining tree detectors need 0.021 to
-0.025 and the multilayer perceptron 0.033, all smaller than the 0.040 to 0.071 required
-by the deep detectors. The nearest-neighbour detector is the single exception at 0.101, and it
-pays for that resistance with the weakest clean $F_1$ and the highest false-alarm rate
+median perturbation of 0.009 (95\% bootstrap interval 0.008 to 0.014) evades it, well
+separated from every other detector. The remaining tree detectors need 0.021 to 0.025
+and the multilayer perceptron 0.033, all smaller than the 0.040 to 0.071 required by the
+deep detectors, and the nearest-neighbour detector is the single exception at 0.101
+(0.093 to 0.108). The bootstrap intervals resolve the coarse ordering but not every
+pair: within the 0.021 to 0.025 tree cluster the intervals of LightGBM, XGBoost,
+DecisionTree and RandomForest overlap, so their internal ranking is not resolved, whereas
+the gradient-boosting model, the deep band and the nearest-neighbour detector are each
+clearly separated. The nearest-neighbour detector
+pays for its resistance with the weakest clean $F_1$ and the highest false-alarm rate
 in Table~\ref{tab:oppoint}. The apparent robustness of the tree and nearest-neighbour
 detectors under a transferred gradient attack is thus an artifact of the attack, not a
 property of the architecture: when the same detectors are attacked through their
@@ -78,8 +84,9 @@ stronger than the single-surrogate transfer, yet both understate the vulnerabili
 the decision-based attack reveals.
 
 The three GNSS domain attacks, bounded to the same budget and projected onto the
-realizable set, are far weaker than the learned attacks. Their attack success rate
-stays below 0.2 and is near zero for most detectors, so naive in-budget manipulation of
+realizable set, are far weaker than the learned attacks. Their attack success rate has
+median 0.004, interquartile range 0.001 to 0.018 and a worst case of 0.193, so it is
+near zero for most detectors, so naive in-budget manipulation of
 the observables does not fool the detectors while the learned perturbations do. The threat therefore lies in the learned attack rather than
 in simple signal shaping, and every learned attack in this study corresponds to a
 transmittable signal because of the enforcer of Section~\ref{sec:enforcer}. Attack
@@ -93,7 +100,8 @@ Generalization to unseen conditions fails, and it fails by detector and by condi
 rather than by family. Figure~\ref{fig:generalization}(a) reports cross-scenario
 recall when a spoofing scenario is held out of training. Averaged over the three
 held-out scenarios the mean recall is 0.52 for the classical detectors and 0.44 for the
-deep detectors, and the overpowered ds2 scenario is the worst case for every detector,
+deep detectors, with a standard deviation across the held-out scenarios of 0.20 and 0.25
+respectively, and the overpowered ds2 scenario is the worst case for every detector,
 with the random forest falling to a recall of 0.09. This
 reproduces, on an independent receiver pipeline, the collapse toward chance that
 physics-constrained work has reported for learned spoofing detectors on unseen
@@ -101,13 +109,14 @@ scenarios \citep{song2026generalized}. The behaviour is scenario-dependent rathe
 a fixed family ranking: on the carrier-phase-aligned ds7 scenario two deep detectors
 reach a recall of 0.84 and outperform every classical detector.
 
-Figure~\ref{fig:generalization}(b) reports recall across held-out satellites. Most
-satellites are handled well by most detectors, but specific satellites break specific
-detectors: the bidirectional LSTM falls to a recall of 0.006 on one held-out
-satellite, and the gradient-boosting model falls to 0.028 on another, while other
-detectors of the same family hold up on the identical fold. Cross-satellite failure is
-therefore per-architecture and unpredictable in direction, not a property that a family
-label predicts.
+Figure~\ref{fig:generalization}(b) reports recall across the eleven held-out satellites.
+Most satellites are handled well by most detectors, with per-detector median recall
+between 0.79 and 1.00, but the worst held-out satellite drives specific detectors near
+zero: the bidirectional LSTM falls to a recall of 0.006 on one held-out satellite, and
+the gradient-boosting model falls to 0.028 on another, while other detectors of the same
+family hold up on the identical fold. With eleven satellites this is a per-fold
+observation rather than a hypothesis-tested pattern, but the direction is consistent:
+cross-satellite failure is per-architecture and not predicted by the family label.
 
 \subsection{Statistical significance}
 \label{sec:res_stats}
@@ -115,8 +124,9 @@ label predicts.
 The detectors are pairwise distinguishable. Across the McNemar tests over all detector
 pairs, with Holm correction, 74 of 78 pairs differ at the adjusted 0.05 level, so the
 comparison is not undermined by detectors that make identical errors. The Friedman test
-finds strong heterogeneity across attacks within each family (deep $\chi^2=22.9$,
-$p=1.3\times10^{-4}$; classical $\chi^2=26.9$, $p=2.1\times10^{-5}$), which confirms
+finds strong heterogeneity across attacks within each family, over five attack
+conditions (deep $\chi^2(4)=22.9$, $p=1.3\times10^{-4}$; classical $\chi^2(4)=26.9$,
+$p=2.1\times10^{-5}$), which confirms
 that attack choice, and in particular the decision-based attack, is what drives the
 degradation.
 
@@ -133,9 +143,11 @@ no family dominates.}
 \centering
 \includegraphics[width=\linewidth]{figures/fig06_fragility_ranking.pdf}
 \caption{Median minimum $L_\infty$ perturbation needed to evade each detector under the
-gradient-free decision-based attack. Smaller is more fragile. The boosted-tree and tree
-detectors are the easiest to evade, the gradient-boosting model most of all despite its
-best clean $F_1$, and the nearest-neighbour detector is the single robust outlier.}
+gradient-free decision-based attack, with 95\% bootstrap confidence intervals over the
+500 attacked samples per detector. Smaller is more fragile. The tree detectors are the
+easiest to evade, the gradient-boosting model most of all despite its best clean $F_1$,
+and the nearest-neighbour detector is the single robust outlier; within the tree cluster
+the intervals overlap, so their internal ranking is not resolved.}
 \label{fig:fragility}
 \end{figure}
 

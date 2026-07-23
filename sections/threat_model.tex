@@ -5,16 +5,23 @@ We evaluate every detector under one common threat model. The attacker is a spoo
 that already transmits counterfeit signals and seeks to convert a spoofed observation
 the detector would flag into one it accepts. The attacker manipulates the transmitted
 signal, which in turn moves the receiver observables within the physical limits set out
-in Section~\ref{sec:signal}. The manipulation is bounded in $L_\infty$ by
-$\varepsilon\in\{0.05,0.10,0.20\}$ in the min-max normalised observable space, so the
-realized budget is comparable across detectors and across attacks. Every adversarial
+in Section~\ref{sec:signal}. The fixed budgets $\varepsilon\in\{0.05,0.10,0.20\}$, in the
+min-max normalised observable space, bound the gradient attacks (FGSM, PGD) and the GNSS
+domain attacks, which report success at a set budget, so the realized budget is
+comparable across detectors. The gradient-free decision-based attack is the exception:
+rather than test a fixed budget it searches for the smallest $\varepsilon$ that flips
+each sample, so it is not bounded by these values, and its per-sample minimum
+perturbation is the fragility measure reported in Section~\ref{sec:results}. Every adversarial
 example is projected onto the physically realizable set by the signal-validity enforcer
 of Section~\ref{sec:method}, including the coupling between reported signal quality and
 correlator power, so no reported attack corresponds to a signal the spoofer could not
 transmit.
 
 The attacker's access to the detector depends on the detector. For the differentiable
-deep detectors the attacker has white-box gradient access. For the non-differentiable
+deep detectors the attacker has white-box gradient access. This is a deliberate
+worst-case assumption: a fielded receiver more likely faces a query-limited or
+transfer-only adversary, so the white-box result upper-bounds the deep detectors'
+vulnerability. For the non-differentiable
 tree and nearest-neighbour detectors the attacker has hard-label access, meaning it
 observes only whether the target receiver continues to accept its signal. A spoofer
 obtains this hard-label signal in practice by watching whether the victim maintains

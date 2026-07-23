@@ -58,8 +58,8 @@ Navigation Satellite System (GNSS) receivers against spoofing, yet their behavio
 under a deliberate, adaptive adversary is not well established. This paper reports an
 adversarial evaluation of thirteen detectors, six deep networks and seven classical
 models, on
-receiver observables produced by an open software-defined receiver from the Texas
-Spoofing Test Battery. Every detector is placed at a common operating point of clean
+receiver observables produced by an open software-defined receiver from the static
+family of the Texas Spoofing Test Battery, a stationary-receiver setting. Every detector is placed at a common operating point of clean
 recall 0.95 and is attacked by one shared suite that includes white-box gradient
 attacks, multi-surrogate transfer, three GNSS domain manipulations and a
 gradient-free decision-based attack. Each adversarial example is projected onto the
@@ -95,11 +95,13 @@ receiver, Resilient PNT, Decision-based attack}
 \backmatter
 
 \bmhead{Data and code availability}
-The Texas Spoofing Test Battery recordings are distributed by the University of Texas
-at Austin Radionavigation Laboratory. The FGI-GSRx software-defined receiver is
-released under the GPLv3 licence. The receiver observables and the evaluation code that
-support the findings of this study are available from the corresponding author on
-reasonable request.
+The derived receiver-observable corpus, the evaluation code and the figure-generation
+scripts are publicly available in a version-controlled repository and archived on Zenodo
+with a permanent DOI (\url{https://doi.org/XX.XXXX/zenodo.XXXXXXX}); for
+double-anonymous review an anonymised copy is provided to the editorial office. The raw
+Texas Spoofing Test Battery recordings are distributed by the University of Texas at
+Austin Radionavigation Laboratory, and the FGI-GSRx software-defined receiver is released
+under the GPLv3 licence.
 
 \bmhead{Competing interests}
 The authors declare no competing interests.

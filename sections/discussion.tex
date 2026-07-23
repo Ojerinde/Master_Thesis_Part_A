@@ -73,7 +73,22 @@ focus of ongoing work. The evidence here sets the requirement that such a defenc
 meet: it has to withstand a gradient-free attacker at a common operating point, not
 merely a transferred gradient attack.
 
-The evaluation covers the static family of the benchmark, with three held-out spoofing
-scenarios and the satellites present in those recordings. Extending the protocol to a
-wider set of scenarios and to dynamic platforms is a natural direction for further work
-and would test whether the conclusions hold across a broader operating envelope.
+Two findings compound for a practitioner before any adversary is considered. The clean
+false-alarm rate at the safety-first operating point is high, from 0.30 to 0.69
+(Table~\ref{tab:oppoint}), and cross-scenario recall collapses on an unseen attack. On
+this evidence none of the thirteen detectors is deployable as a stand-alone,
+single-epoch integrity monitor today, independently of adversarial robustness. A fielded
+monitor would fuse decisions over time, through a vote or a sequential test across
+epochs, which trades detection latency for a lower per-decision false-alarm rate; the
+per-epoch numbers reported here are the input to such a scheme, not the operating
+performance of a deployed system.
+
+The evaluation covers the static family of the benchmark, which is GPS L1 C/A, with
+three held-out spoofing scenarios and the satellites present in those recordings. The
+gradient-masking result and the fragility ordering are properties of the detectors and
+the attack rather than of the signal, so they should carry over to BeiDou B1I or B1C,
+Galileo E1 and multi-frequency receivers, with the realizability enforcer recalibrated
+to the per-signal $C/N_0$-to-power relation. Extending the protocol to a wider set of
+scenarios, to multi-constellation and multi-frequency observables, and to dynamic
+platforms is a natural direction for further work and would test whether the conclusions
+hold across a broader operating envelope.

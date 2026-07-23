@@ -66,20 +66,27 @@ def fig_f6():
     bb = pd.read_csv(TAB / "blackbox_boundary_all.csv")
     d = (bb.groupby(["model", "family"], as_index=False)["median_min_linf"].first()
          .sort_values("median_min_linf"))
+    ci = pd.read_csv(TAB / "blackbox_boundary_ci.csv").set_index("model")
+    d = d.merge(ci[["ci_lo", "ci_hi"]], left_on="model", right_index=True, how="left")
     y = np.arange(len(d))
     colors = [FAM_COLOR[f] for f in d.family]
     edges = [EDGE[f] for f in d.family]
 
     fig, ax = plt.subplots(figsize=(FULL_W, 8.5 * CM))
-    ax.barh(y, d["median_min_linf"], color=colors, edgecolor=edges, linewidth=0.7,
+    med = d["median_min_linf"].values
+    ax.barh(y, med, color=colors, edgecolor=edges, linewidth=0.7,
             height=0.68, zorder=3)
-    for yi, v in zip(y, d["median_min_linf"]):
-        ax.text(v + 0.0015, yi, f"{v:.3f}", va="center", ha="left",
+    # 95% bootstrap CI on the median (asymmetric)
+    xerr = np.vstack([med - d["ci_lo"].values, d["ci_hi"].values - med])
+    ax.errorbar(med, y, xerr=xerr, fmt="none", ecolor=INK, elinewidth=0.8,
+                capsize=2, capthick=0.8, zorder=4)
+    for yi, hi, v in zip(y, d["ci_hi"].values, med):
+        ax.text(hi + 0.002, yi, f"{v:.3f}", va="center", ha="left",
                 fontsize=7, color=INK)
     ax.set_yticks(y); ax.set_yticklabels(d["model"])
     ax.set_xlabel(r"Median minimum $\ell_\infty$ perturbation to evade detection"
-                  "\n(decision-based attack; smaller = more fragile)")
-    ax.set_xlim(0, max(d["median_min_linf"]) * 1.18)
+                  "\n(decision-based attack, 95% bootstrap CI; smaller = more fragile)")
+    ax.set_xlim(0, d["ci_hi"].max() * 1.15)
     ax.grid(axis="y", visible=False)
     ax.invert_yaxis()
     # family legend (identity not by color alone: also grouped position + this legend)

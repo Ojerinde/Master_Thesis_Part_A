@@ -20,7 +20,7 @@ discarded; the clean static recording is authentic throughout. Drawing both clas
 from the same recordings removes the recording-identity shortcut, under which a
 detector could separate the classes by learning which file an epoch came from rather
 than the spoofing signature. The resulting corpus holds about 209{,}000 labelled
-epochs, close to balanced between the two classes, so no resampling is applied.
+epochs, close to balanced (about 51\% spoofed), so no resampling is applied.
 
 Train, validation and test partitions are formed by a leakage-free block-temporal
 split. Within each satellite and recording segment the epochs are ordered by time and
@@ -83,7 +83,10 @@ spoofed sample it searches for the smallest $L_\infty$ perturbation, in the min-
 normalised observable space, that moves the sample across the decision boundary to the
 authentic side at $\tau^\star$. Because the attack uses only the hard decision, it
 applies uniformly to differentiable and non-differentiable detectors and provides the
-matched measure of vulnerability that a transferred gradient attack cannot.
+matched measure of vulnerability that a transferred gradient attack cannot. The suite
+characterises $L_\infty$ vulnerability; other norms such as $L_2$ or $L_0$
+\citep{carlini2017evaluating} may expose different weaknesses and are outside the scope
+of this study.
 
 \subsection{Signal-validity enforcer}
 \label{sec:enforcer}
@@ -100,7 +103,10 @@ arbitrary feature perturbation. Figure~\ref{fig:realizability} illustrates the e
 An attack that raises the reported $C/N_0$ without supplying the correlator power that
 would produce it leaves the physically attainable band, and the enforcer projects it
 back onto that band, so the enforcer is the mechanism by which every attack in this
-study is kept transmittable.
+study is kept transmittable. The enforcer acts per epoch, so it guarantees that each
+epoch is individually realizable but does not constrain the epoch-to-epoch continuity of
+the amplitude, phase and code trajectories; a temporal-smoothness constraint on that
+trajectory is a natural extension left to future work.
 
 \begin{figure}[tb]
 \centering
@@ -125,6 +131,9 @@ block and retrains each detector on its own training block, so no information fr
 held-out fold enters training.
 
 Uncertainty on the clean $F_1$ is reported as a 10{,}000-sample bootstrap confidence
-interval. Pairwise detector differences are tested with the mid-$p$ McNemar test
-\citep{dietterich1998approximate} under Holm correction across pairs, and heterogeneity
-across attacks is tested with the Friedman test \citep{demsar2006statistical}.
+interval, and the median minimum $L_\infty$ perturbation of each detector is reported
+with a 10{,}000-sample bootstrap interval over the attacked samples. Pairwise detector
+differences, computed on the clean test-set decisions, are tested with the mid-$p$
+McNemar test \citep{dietterich1998approximate} under Holm correction across all pairs,
+and heterogeneity across attacks is tested with the Friedman test
+\citep{demsar2006statistical}.
