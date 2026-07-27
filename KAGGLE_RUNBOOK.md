@@ -1,4 +1,25 @@
-# Kaggle GPU runbook — full generalization (experiment 23)
+# Kaggle GPU runbooks
+
+Two independent Kaggle notebooks, both driven by the same corpus dataset
+(`texbat_track_combined.csv`). Run `kaggle_core_pipeline.ipynb` first if the
+locally saved models are stale relative to `data/loader.py`'s scaler (check
+`data/processed/scaler.pkl`'s timestamp against the model files under
+`results/models/`); `kaggle_generalization.ipynb` is independent and can run
+before, after, or in parallel.
+
+## `kaggle_core_pipeline.ipynb` — the 13-detector training + attack suite
+
+Runs `run_pipeline.py` (01 through 16): trains all 13 detectors from scratch,
+then the full attack suite (decision-based boundary, multi-surrogate transfer,
+FGSM/PGD/DLSA/SNA/TPA) and stats/figures. This is what produces Table 1 and
+the fragility/rank-inversion/trade-off figures. Needed whenever the feature
+space or the training code changes, since every downstream script assumes the
+saved models match the current scaler — running attacks against a model
+trained under a different scaler produces silently wrong numbers, not an
+error. Much lighter than experiment 23 below (trains each detector once, not
+per fold), so it fits comfortably in one Kaggle session.
+
+## `kaggle_generalization.ipynb` — experiment 23 (full generalization)
 
 Purpose: run `experiments/23_generalization.py` (the full version, with the six deep
 models) on a Kaggle GPU, because the ~84 per-fold DL retrains are slow on a local CPU
@@ -9,12 +30,12 @@ CSV and retrains every fold from scratch, so it does NOT depend on the locally t
 Reproducibility: `23_generalization.py` now fixes all seeds (Python, NumPy, Torch) and
 sets `cudnn.deterministic`, so the Kaggle numbers are stable. The classical folds are
 deterministic (`random_state=42`) and reproduce the local `--classical-only` numbers
-exactly. Cite the compute environment for this experiment in the paper's Methods.
+exactly.
 
-Compute-environment note for the manuscript: the main detection and adversarial results
-are CPU-trained locally; the generalization folds are GPU-trained on Kaggle. This is
-sound because generalization is a leave-one-out protocol that retrains per fold by
-design and never reuses the main models. State both environments in Methods.
+Compute-environment note: the manuscript does not currently state a training
+environment (CPU vs. GPU) for any result, so there is nothing in the paper to
+reconcile regardless of which of these two notebooks trains the core models.
+If that changes, state it in Methods.
 
 --------------------------------------------------------------------------------
 ## One-time setup
