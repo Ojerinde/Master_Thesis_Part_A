@@ -9,10 +9,12 @@ before, after, or in parallel.
 
 ## `kaggle_core_pipeline.ipynb` — the 13-detector training + attack suite
 
-Runs `run_pipeline.py` (01 through 16): trains all 13 detectors from scratch,
+Runs `run_pipeline.py` (01 through 22): trains all 13 detectors from scratch,
 then the full attack suite (decision-based boundary, multi-surrogate transfer,
-FGSM/PGD/DLSA/SNA/TPA) and stats/figures. This is what produces Table 1 and
-the fragility/rank-inversion/trade-off figures. Needed whenever the feature
+FGSM/PGD/DLSA/SNA/TPA) and stats. This is what produces the tables Table 1 and
+the fragility/rank-inversion/trade-off figures are built from; run
+`papers/paper1-satnav/make_figures.py` locally afterward to regenerate the
+figures themselves (`run_pipeline.py` does not call it). Needed whenever the feature
 space or the training code changes, since every downstream script assumes the
 saved models match the current scaler — running attacks against a model
 trained under a different scaler produces silently wrong numbers, not an

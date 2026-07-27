@@ -395,7 +395,8 @@ def train_baseline_models(
 ) -> tuple:
     """Train all baseline models with CV, tuning, calibration, and threshold analysis.
     Input arrays are feature-engineered but NOT scaled (Pipelines scale internally).
-    Saves optimal_thresholds.csv for use by 03_adversarial_evaluation."""
+    Saves optimal_thresholds.csv as a per-model diagnostic (each stage after
+    this one computes its own operating-point threshold independently)."""
     print("\n" + "=" * 70)
     print("BASELINE MODEL TRAINING")
     print("=" * 70)
@@ -556,7 +557,8 @@ def train_baseline_models(
         .reset_index(drop=True)
     )
 
-    # Save optimal thresholds CSV for 03_adversarial_evaluation.py
+    # Save per-model optimal-threshold diagnostic (informational; downstream
+    # stages compute their own recall-0.95 operating point independently).
     thresh_rows = []
     for r in results:
         t_opt = r.get('thresh_optimal', float('nan'))
@@ -576,7 +578,6 @@ def train_baseline_models(
         thresh_path = TABLES_DIR / 'optimal_thresholds.csv'
         thresh_df.to_csv(thresh_path, index=False)
         print(f"\n✓ Optimal thresholds saved: {thresh_path}")
-        print("  (Used by 03_adversarial_evaluation.py for per-model thresholds)")
     else:
         print("\n⚠ No threshold data to save — all models lacked predict_proba?")
 

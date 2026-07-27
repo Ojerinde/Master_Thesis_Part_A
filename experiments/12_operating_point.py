@@ -7,9 +7,10 @@ across families. This script sets ONE common operating point for every model:
 the decision threshold that yields clean-VALIDATION recall = 0.95 (the
 safety-first sensitivity floor), then reports clean-TEST metrics at that point.
 
-It reuses the exact data pipeline and model set of 03_adversarial_evaluation.py
-(deterministic split random_state=42; classical models take unscaled engineered
-input, DL models take MinMaxScaler-scaled input).
+It uses the shared leakage-free block-temporal split (data.loader.load_track_splits,
+deterministic) and the same 13-detector roster as every other stage: classical models
+take unscaled engineered input (their Pipeline scales internally), DL models take
+MinMaxScaler-scaled input.
 
 Outputs:
   results/tables/operating_point_recall95.csv   (per-model tau + clean metrics)
@@ -43,7 +44,6 @@ from models.deep_learning import (                        # noqa: E402
 
 TARGET_RECALL = 0.95
 
-# Same rosters as 03_adversarial_evaluation.py
 SELECTED_CLASSICAL = {
     'RandomForest':     'RandomForest_default',
     'XGBoost':          'XGBoost_default',

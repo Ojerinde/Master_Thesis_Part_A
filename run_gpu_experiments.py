@@ -54,8 +54,9 @@ def run(script, args, desc, i, n, tag):
         lf.write(f"# {script} {args} -- {datetime.now().isoformat()}\n\n"); lf.flush()
         p = subprocess.Popen(
             [sys.executable, '-u', str(path), *args], cwd=str(ROOT),
-            env=dict(os.environ, PYTHONWARNINGS='ignore'),
-            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1)
+            env=dict(os.environ, PYTHONWARNINGS='ignore', PYTHONUTF8='1'),
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1,
+            encoding='utf-8')
         for line in p.stdout:
             sys.stdout.write(line); sys.stdout.flush(); lf.write(line)
         p.wait()
