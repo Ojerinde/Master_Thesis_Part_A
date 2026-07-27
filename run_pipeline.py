@@ -40,6 +40,7 @@ STEPS = [
     ('02_deep_learning_baseline.py',  'train 6 deep detectors'),
     ('12_operating_point.py',         'common recall-0.95 operating point (tau*)'),
     ('13_blackbox_attacks.py',        'decision-based boundary attack (gradient-masking-proof)'),
+    ('25_fragility_ci.py',            'bootstrap CI on the fragility ranking (Fig 6/7 error bars)'),
     ('14_multisurrogate_transfer.py', 'multi-surrogate transfer attack'),
     ('18_full_eval.py',               'FGSM/PGD/DLSA/SNA/TPA master table at tau*'),
     ('17_latency.py',                 'inference + attack-generation latency'),
