@@ -1,12 +1,19 @@
 """
-GNSS Adversarial ML Research — Pipeline Entry Point
+GNSS Adversarial ML Research — LEGACY pipeline entry point
 ====================================================
+Superseded by run_pipeline.py, which runs the current scripts (01, 02, then
+12/13/14/18/17/20/19/22/21/16) in the min-max [0,1] feature space that the
+Paper-1 manuscript numbers come from. This file still works, but Stages 3 and
+4 below (03_adversarial_evaluation, 04_statistical_analysis) are the earlier,
+StandardScaler-era analysis and are NOT what produced the reported results.
+Kept for anyone who wants that earlier flow specifically.
+
 Runs the complete experiment pipeline:
   Stage 1: Classical baseline training    (01_classical_baseline)
   Stage 2: Deep learning baseline training (02_deep_learning_baseline)
-  Stage 3: Adversarial robustness evaluation (03_adversarial_evaluation)
-  Stage 4: Statistical analysis            (04_statistical_analysis)
-  Stage 5: Manuscript figure generation    (05_manuscript_figures)
+  Stage 3: Adversarial robustness evaluation (03_adversarial_evaluation) [legacy]
+  Stage 4: Statistical analysis            (04_statistical_analysis) [legacy]
+  Stage 5: Manuscript figure generation    (05_manuscript_figures) [legacy]
 
 Usage:
     python main.py                # full pipeline (all 5 stages)

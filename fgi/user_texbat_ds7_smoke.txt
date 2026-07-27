@@ -14,7 +14,7 @@ sys,msToSkip,0e3,
 sys,loadDataFile,false,
 sys,dataFileIn,'',
 sys,saveDataFile,true,
-sys,dataFileOut,'D:\BEIHANG UNIVERSITY\Research\FGI_Data\out\trackData_ds7_smoke.mat',
+sys,dataFileOut,'D:\BEIHANG UNIVERSITY\Research\data\FGI_Data\out\trackData_ds7_smoke.mat',
 sys,loadIONMetaDataReading,false,
 sys,metaDataFileIn,''
 
@@ -27,8 +27,8 @@ sys,showTrackingOutput,true,
 % Tracking mode: sequential (memory-safe)
 sys,parallelChannelTracking,false,
 sys,PCTenabled,false,
-sys,currentWorkingDirectoryForFGIGSRx,'D:\BEIHANG UNIVERSITY\Research\FGI-GSRx\',
-sys,trackDataFilePath,'D:\BEIHANG UNIVERSITY\Research\FGI_Data\out\',
+sys,currentWorkingDirectoryForFGIGSRx,'D:\BEIHANG UNIVERSITY\Research\code\FGI-GSRx\',
+sys,trackDataFilePath,'D:\BEIHANG UNIVERSITY\Research\data\FGI_Data\out\',
 
 % Multi-correlator OFF
 sys,enableMultiCorrelatorTracking,false,
@@ -44,7 +44,7 @@ nav,trueHeight,165.0,
 
 % GPS L1 front end (TEXBAT: 25 Msps, complex, 16+16-bit, L1 baseband)
 gpsl1,frontEnd,'TEXBAT',
-gpsl1,rfFileName,'D:\BEIHANG UNIVERSITY\Research\gnss_adversarial_research\data\raw\texbat\ds7.bin',
+gpsl1,rfFileName,'D:\BEIHANG UNIVERSITY\Research\code\gnss_adversarial_research\data\raw\texbat\ds7.bin',
 gpsl1,centerFrequency,1575420000,
 gpsl1,samplingFreq,25000000,
 gpsl1,bandWidth,2000000,

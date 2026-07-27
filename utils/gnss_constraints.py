@@ -11,15 +11,16 @@ Bounds are derived from:
   - Psiaki & Humphreys (2016): GNSS Spoofing and Detection.
     Proc. IEEE, 104(6), 1258-1270.
 
-Note: all attacks operate in NORMALISED feature space (after StandardScaler).
+Note: all attacks operate in the min-max [0,1] feature space (after MinMaxScaler).
 The bounds below are in ORIGINAL physical units and are applied by inverse-
 transforming, clipping, then re-transforming — OR by simply clipping the
-normalised values to the range they would map to after StandardScaler.
-In practice, StandardScaler shifts and scales but does not clip, so extreme
-values after attack can be clipped by the NORMALISED equivalents stored in
-self.normalised_bounds (set via fit()).  The default clip_to_gnss_bounds()
-operates in normalised space using data-driven bounds unless physical bounds
-are provided.
+normalised values to the range they would map to after MinMaxScaler.
+MinMaxScaler shifts and scales but does not clip, so extreme values after attack
+can be clipped by the NORMALISED equivalents stored in self.normalised_bounds
+(set via fit()).  The default clip_to_gnss_bounds() operates in the [0,1] space
+using data-driven bounds unless physical bounds are provided. The C/N0~I/Q-power
+coupling (fit_coupling / enforce_coupling_phys) is always applied in physical
+units, since it encodes a physical relation independent of the feature scaling.
 """
 
 import numpy as np
@@ -61,7 +62,7 @@ class GNSSConstraintEnforcer:
 
     Usage pattern
     -------------
-    1. Call fit(X_train, feature_names) once after StandardScaler.
+    1. Call fit(X_train, feature_names) once after MinMaxScaler.
     2. Call clip_to_gnss_bounds(X_adv) after every attack step.
     """
 
@@ -82,7 +83,7 @@ class GNSSConstraintEnforcer:
 
         Parameters
         ----------
-        X_train      : normalised training set (after StandardScaler)
+        X_train      : normalised training set (after MinMaxScaler)
         feature_names: list of column names (used to tighten bounds using
                        physical limits where known)
         """
@@ -154,7 +155,7 @@ class GNSSConstraintEnforcer:
         Clip each feature to its normalised bound.
 
         If fit() has not been called, falls back to [-10, 10] per feature
-        (a reasonable default for StandardScaler outputs).
+        (a reasonable default for MinMaxScaler outputs).
 
         Parameters
         ----------

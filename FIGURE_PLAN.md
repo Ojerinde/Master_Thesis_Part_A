@@ -101,7 +101,45 @@ directly answers the realizability objection.
 
 ---
 
-## Status
+## Status (updated 2026-07-18)
+GENERATED to journal spec by `manuscript/Satellite_Navigation/make_figures.py`
+(vector PDF + 400 dpi PNG; Arial embedded TrueType/fonttype-42; Okabe-Ito
+colorblind-safe palette validated with the dataviz checker; sized to the 16 cm
+Springer text width; every rendered figure visually inspected and defects fixed):
+- F2 -> figures/fig02_signature_timehistory_prn23.pdf  (authentic cleanStatic vs
+  spoofed ds7, PRN 23; C/N0 + Doppler + DLL; takeover band 110-150 s). DONE.
+- F3 -> figures/fig03_feature_distributions.pdf  (genuine vs spoof, 6 observables). DONE.
+- F5 -> figures/fig05_detection_operating_point.pdf  (F1 per model, sorted, by family;
+  no-family-dominance story, F1 0.736-0.843). DONE.
+- F6 -> figures/fig06_fragility_ranking.pdf  (HEADLINE: median min-Linf to evade,
+  decision-based; GradientBoosting 0.009 most fragile, KNN 0.101 outlier; trees<deep). DONE.
+- F8 -> figures/fig08_generalization.pdf  (a: cross-scenario recall heatmap 13x3,
+  ds2 collapse column; b: leave-PRN strip, per-architecture outliers e.g. BiLSTM~0.006). DONE.
+- F9 -> figures/fig09_realizability.pdf  (C/N0 vs log10(I^2+Q^2) manifold; unconstrained
+  adversarial leaves the physical band, enforcer projects it back). DONE 2026-07-19,
+  wired into Methods sec:enforcer (fig:realizability).
+- F4 -> figures/fig04_receiver_validation.pdf  (a: acquisition metric per PRN, 10 acquired
+  above threshold=10, PRN 23 strongest 44.7; b: PRN 23 code-phase correlation, single sharp
+  peak). DONE 2026-07-19 from EXISTING FGI_Data/out/trackData_cleanStatic_full.mat via
+  scipy.io (NO MATLAB re-run needed). Wired into Signal Model (fig:acq).
+Journal-compliance confirmed: Arial present at C:/Windows/Fonts/arial.ttf (used).
+- Old TikZ F1 draft superseded by the raster pipeline schematic (fig01_pipeline.jpg).
+
+## Status (superseded — see the final paper)
+This plan is complete and historical. All 11 figures are generated and wired into
+the manuscript (`papers/paper1-satnav/figures/`, built by
+`papers/paper1-satnav/make_figures.py`, the successor to this file's generation
+script): F1 pipeline, F2 signature time-history, F3 feature distributions, F4
+receiver validation, F5 detection operating point, F6 fragility ranking (with 95%
+bootstrap CIs), F7 SQM correlation distortion (the multi-correlator pass below was
+completed), F8 generalization, F9 realizability, plus two added during the peer-review
+response: F10 rank inversion (clean vs adversarial ranking) and F11 the four-axis
+trade-off. Current build: 25 pages, 0 undefined references, 0 overfull hboxes. For
+the authoritative current state, read the manuscript
+(`papers/paper1-satnav/`) and this repo's `PAPER1_MANUSCRIPT_UPDATES.md`
+rather than this plan.
+
+## Old status
 - F1: DRAFTED as TikZ in manuscript/GPS_Solutions_sn/paper1_new_sections_draft.tex.
 - F2, F3: ready to build the moment `texbat_track_combined.csv` exists.
 - F4: needs `acqData` saved from a tracked `.mat`.

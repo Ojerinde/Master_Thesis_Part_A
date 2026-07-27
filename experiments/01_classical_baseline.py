@@ -21,7 +21,7 @@ from imblearn.over_sampling import SMOTE
 from lightgbm import LGBMClassifier
 from xgboost import XGBClassifier
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import MinMaxScaler
 from sklearn.pipeline import Pipeline
 from sklearn.neural_network import MLPClassifier
 from sklearn.neighbors import KNeighborsClassifier
@@ -148,18 +148,21 @@ def _lr_base(class_weight=None):
 
 
 def build_classical_models(pos_neg_ratio: float = 1.0) -> dict:
-    """Build all classical models as Pipelines with internal StandardScaler.
-    Returns dict of model_name -> Pipeline. Expects unscaled input."""
+    """Build all classical models as Pipelines with internal MinMaxScaler.
+    Returns dict of model_name -> Pipeline. Expects unscaled input.
+    MinMax [0,1] so the classical model input space matches the deep models
+    and every attack budget is a min-max L-inf distance (trees are invariant
+    to monotone scaling; KNN/MLP see the [0,1] representation)."""
 
     def std_pipe(estimator):
         return Pipeline([
-            ("scaler", StandardScaler()),
+            ("scaler", MinMaxScaler()),
             ("model",  estimator),
         ])
 
     def smote_pipe(estimator):
         return ImbPipeline([
-            ("scaler", StandardScaler()),
+            ("scaler", MinMaxScaler()),
             ("smote",  SMOTE(random_state=42, k_neighbors=5)),
             ("model",  estimator),
         ])
@@ -592,7 +595,7 @@ def main():
     # (see data.loader.load_track_splits: contiguous temporal blocks per
     # scenario/PRN/segment, with purge gaps — no random shuffling, so adjacent
     # near-identical epochs never straddle train/test). Classical Pipelines scale
-    # internally, so they take the UNSCALED X; the returned StandardScaler is
+    # internally, so they take the UNSCALED X; the returned MinMaxScaler is
     # saved for the DL baseline (02).
     (X_train, X_val, X_test, y_train, y_val, y_test,
      feature_names, scaler) = load_track_splits(verbose=True)
@@ -620,11 +623,11 @@ def main():
         pickle.dump(numeric_cols, f)
     print(f"✓ Raw feature names saved: {RAW_FEATURE_NAMES_PATH}")
 
-    scaler = StandardScaler()
+    scaler = MinMaxScaler()
     scaler.fit(X_train)
     with open(SCALER_PATH, 'wb') as f:
         pickle.dump(scaler, f)
-    print(f"✓ StandardScaler saved: {SCALER_PATH}")
+    print(f"✓ MinMaxScaler saved: {SCALER_PATH}")
 
     # Step 5: Model training
     print("\n" + "=" * 70)

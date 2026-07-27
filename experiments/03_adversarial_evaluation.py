@@ -3,7 +3,7 @@ Adversarial Robustness Evaluation — runs 7 attack types against all trained
 GNSS spoofing detectors (classical + DL).
 
 Key design: classical models receive unscaled input (X_test_eng) because their
-Pipelines apply StandardScaler internally; DL models receive scaled input
+Pipelines apply MinMaxScaler internally; DL models receive scaled input
 (X_test). Transfer attacks inverse-transform from scaled to unscaled space.
 
 Attack taxonomy:
@@ -31,7 +31,7 @@ from data.feature_engineering import SafeFeatureEngineer
 from data.loader import load_texbat
 from config.model_configs import get_config
 from config.paths import create_directories, CLASSICAL_MODELS, DL_MODELS, TABLES_DIR
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import MinMaxScaler
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import (
     accuracy_score, f1_score, precision_score,
@@ -282,7 +282,7 @@ def load_and_preprocess():
     X_test_eng = X_test_eng.astype(np.float32)
 
     # DL path — externally scaled
-    scaler = StandardScaler()
+    scaler = MinMaxScaler()
     X_train = scaler.fit_transform(X_train_eng).astype(np.float32)
     X_val = scaler.transform(X_val_eng).astype(np.float32)
     X_test = scaler.transform(X_test_eng).astype(np.float32)
@@ -509,7 +509,7 @@ def run_transfer_attacks(dl_models: dict,
                          epsilons: list,
                          feature_names: list,
                          enforcer_dl: GNSSConstraintEnforcer,
-                         scaler: StandardScaler,
+                         scaler: MinMaxScaler,
                          thresholds: dict) -> list:
     """
     Craft adversarial examples on CNN-1D surrogate (scaled DL space),
@@ -520,7 +520,7 @@ def run_transfer_attacks(dl_models: dict,
     2. Inverse-transform X_adv back to unscaled feature-engineered space
        using scaler.inverse_transform().
     3. Evaluate classical models on X_adv_eng (unscaled adversarial).
-    4. Classical models' Pipelines then re-apply their internal StandardScaler
+    4. Classical models' Pipelines then re-apply their internal MinMaxScaler
        — this is correct; the perturbations are preserved in the features.
 
     Bug 4 fix: pre-fitted enforcer_dl used for surrogate attacks.

@@ -18,12 +18,18 @@ References:
 - Wesson et al. (2011): TEXBAT Dataset - Realistic attack parameters
 """
 
+# NOTE: this module is legacy and is NOT imported by the Paper-1 pipeline. The
+# operative attack budgets are defined directly in experiments/13_blackbox_attacks.py
+# and experiments/18_full_eval.py as EPS = [0.05, 0.10, 0.20] in the min-max [0,1]
+# feature space. Kept only for reference; do not wire it back in.
+
 # --- FGSM (Fast Gradient Sign Method) ---
 # Rationale: Single-step gradient-based attack
 # Fast, efficient, good baseline for adversarial robustness
-# Epsilon values calibrated to normalized feature space (after StandardScaler)
-# For GNSS signals: epsilon=0.1 corresponds to ~1 std dev perturbation
-# This is physically plausible for measurement noise and small spoofing signals
+# Epsilon values are an L-inf budget in the min-max [0,1] feature space (after
+# MinMaxScaler): a budget is a fraction of each observable's training range, e.g.
+# epsilon=0.10 on C/N0 (span ~57 dB) is ~5.7 dB. Physically plausible for small
+# spoofing signals.
 
 FGSM_CONFIG = {
     'epsilon': [0.01, 0.05, 0.1, 0.15, 0.2],

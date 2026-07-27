@@ -13,7 +13,7 @@ from models.deep_learning import (
     CNN1DModel, LSTMModel, BiLSTMModel,
     CNNLSTMModel, TransformerModel, TCNModel,
 )
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import MinMaxScaler
 from sklearn.model_selection import train_test_split
 from data.feature_engineering import SafeFeatureEngineer
 from data.loader import load_texbat
@@ -98,7 +98,7 @@ def load_data():
     X_train_eng = X_train_eng.astype(np.float32)
     X_test_eng = X_test_eng.astype(np.float32)
 
-    scaler = StandardScaler()
+    scaler = MinMaxScaler()
     X_train = scaler.fit_transform(X_train_eng).astype(np.float32)
     X_test = scaler.transform(X_test_eng).astype(np.float32)
 

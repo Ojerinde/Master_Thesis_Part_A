@@ -149,7 +149,7 @@ on the validation block. No fixed 0.5 anywhere (fixes Reviewer #1 #2).
 - Non-differentiability of tree/kNN is treated as gradient masking; the
   decision-based (hard-label) attack defeats it (Athalye 2018; Carlini 2019).
 - DRAFTED (number-independent LaTeX, ready to integrate):
-  `manuscript/GPS_Solutions_sn/paper1_new_sections_draft.tex` -- signal-model +
+  `papers/_archive/GPS_Solutions_sn/paper1_new_sections_draft.tex` -- signal-model +
   observable-generation section, precise THREAT MODEL section, enforcer section.
   New refs to add to references.bib: `fgigsrx`, `carlini2019evaluating`.
 - IMPLEMENTED: coupling-aware enforcer (`utils/gnss_constraints.py`: fit_coupling +
@@ -178,7 +178,7 @@ GNSS narrative (S.10 reframe). Full register in this session's audit table.
 
 ## 8b. NEW Satellite Navigation manuscript project (2026-07-16, IN PROGRESS)
 
-Clean build at `manuscript/Satellite_Navigation/` (sn-jnl.cls + sn-basic.bst +
+Clean build at `papers/paper1-satnav/` (sn-jnl.cls + sn-basic.bst +
 references.bib copied from GPS_Solutions_sn). `main.tex` + `sections/*.tex`; compiles
 via pdflatex->bibtex->pdflatex x2, 0 undefined citations.
 - TITLE (final, 2026-07-16): "Adversarial Vulnerability of Machine-Learning GNSS
@@ -304,6 +304,50 @@ via pdflatex->bibtex->pdflatex x2, 0 undefined citations.
   per-model resume logic skips everything). Inclusion decision waits on the valid
   full-run FAR + decision-based numbers.
 
+- DEFENSE METHOD LITERATURE VERIFICATION (2026-07-17, user asked to confirm vs expert
+  practice). CONFIRMED via web: (a) Rice et al. 2020 select the AT checkpoint by best
+  robust ACCURACY / lowest robust ERROR on a held-out VALIDATION set (not recall, not
+  loss) -> our fixed selection (robust BALANCED accuracy) realigns with this standard;
+  the original robust-RECALL selection was a genuine deviation and caused the collapse.
+  (b) The AT-under-imbalance boundary-distortion collapse is a DOCUMENTED phenomenon,
+  not our bug: "Alleviating the Effect of Data Imbalance on Adversarial Training"
+  (arXiv 2307.10205) states AT can "move the decision boundary... distort... and
+  destroy the original decision boundary built by clean data"; class-balanced metrics
+  are the literature-consistent mitigation. (c) AT as an empirical defense baseline for
+  binary attack/benign SECURITY DETECTORS is standard in adjacent domains (intrusion
+  detection / network security). HONEST FRAMING for Methods: cite Madry (PGD-AT) + Rice
+  (robust-val early stopping on robust accuracy); state the balanced-accuracy selection
+  as our grounded instantiation of the "select on robust accuracy, class-balanced"
+  principle (not one paper's verbatim recipe); state plainly that the defense
+  methodology is adapted from the general adversarial-ML literature since GNSS-specific
+  AT-defense work is thin (An et al. 2025 list it as future work). Consider adding
+  arXiv 2307.10205 to references.bib if we lean on the imbalance point (verify metadata
+  via Crossref first -- no hallucinated cite).
+
+- DEFENSE RUN 2 (2026-07-18, defense_baseline2.csv, balanced-acc selection fix).
+  Fix PARTIALLY worked: 4/6 models valid, 2/6 STILL fully degenerate.
+  FAR (clean) none->adv_train: CNN-1D 0.64->1.00 (COLLAPSE), CNN-LSTM 0.79->1.00
+  (COLLAPSE), LSTM 0.63->0.86, BiLSTM 0.50->0.86, Transformer 0.43->0.71, TCN 0.45->0.89.
+  So even the 4 "valid" AT models pay heavy precision cost (FAR 0.71-0.89). The 2
+  collapsed models' asr=0 is the always-spoof ARTIFACT (do not report as robustness).
+  CONSISTENT FINDING across all valid models (this is the usable result):
+   - decision-based ASR still 1.0 at UNBOUNDED budget after AT (Transformer 0.96 and
+     TCN 0.89 even at eps=0.2) -> AT does NOT stop the gradient-free attack.
+   - AT DOES robustify gradient attacks (PGD@0.2 recall ~0.4->0.9 for the valid 4).
+   - AT severely degrades precision (FAR up), to full collapse for 2 architectures.
+  INTERPRETATION (coherent, supports thesis + Paper 2): proper PGD-AT hardens the
+  gradient surface, not the boundary; empirical defense insufficient -> certified
+  defense needed. The collapse is consistent with documented AT-under-imbalance
+  boundary distortion (arXiv 2307.10205), NOT a rigor failure.
+  DECISION PENDING (user): A = include COMPACTLY as "empirical AT insufficient"
+  (1 para + small table, transparent about collapse, moderate risk); B = DROP from
+  Paper 1, defenses -> Paper 2/future work (lowest risk; Paper 1 already strong on 3
+  axes). Assistant leans B given the zero-major-revision mandate. STOP tuning AT
+  further (3 rigorous iterations done; more tuning = p-hacking the defense).
+  NOTE: AutoAttack question (user, 2026-07-18) is SEPARATE -- if defense stays (Option
+  A), AutoAttack on the deep models would strengthen it and be a GNSS-domain first;
+  if dropped (B), AutoAttack is optional polish for the main deep-model eval.
+
 - NOVELTIES to weave into Methods/Results (coherent framing, mostly free): (1) the
   coupling-aware realizability enforcer as a NAMED contribution (C/N0~correlator-power
   projection; F9 figure); (2) DLSA/SNA/TPA reframed as observable-domain instantiations
@@ -325,6 +369,36 @@ via pdflatex->bibtex->pdflatex x2, 0 undefined citations.
 - TODO sections: signal_model, threat_model, enforcer (port from
   paper1_new_sections_draft.tex), methods, results (final numbers + F2-F9), discussion,
   conclusion. Style rule enforced: no em dash, no filler adj/adv, no inline "A,B,and C".
+
+## 8c. FULL MANUSCRIPT DRAFTED + COMPILING (2026-07-18)
+
+`papers/paper1-satnav/` is now a COMPLETE compiling draft, 20 pages:
+front matter -> Introduction (Fig 1 pipeline) -> Related Work -> Signal Model (Figs 2-3)
+-> Threat Model -> Methods (corpus, 13 detectors, 2 operating points, attack suite with
+An et al. attribution + decision-based, enforcer as named contribution, 3-view protocol,
+stats) -> Results (clean detection + Table 1, adversarial + Fig 5 fragility headline,
+generalization + Fig 6, statistics) -> Discussion -> Conclusion -> declarations + refs.
+Build clean: pdflatex->bibtex->pdflatex x2, 0 undefined citations, 0 undefined refs,
+0 overfull hboxes, Arial embedded, all 6 figures + Table 1 render. sn-basic author-date
+citations verified rendering ("Athalye et al. 2018; ..."). Section files in sections/*.tex.
+All numbers spot-checked against the source CSVs (operating_point_recall95,
+blackbox_boundary_all, generalization.csv, 19/22 stat logs) and match.
+NUMBER-CONSISTENCY SWEEP DONE (2026-07-19, papers/paper1-satnav/
+verify_numbers.py recomputes every cited number from the CSVs). Found + FIXED: (1) REAL
+ERROR: domain-attack ASR claimed "<=0.05" but max is 0.19 (TPA/TCN@eps0.2) -> reworded
+to "below 0.2, near zero for most, far weaker than learned attacks"; (2) FAR-0.05
+"boosted-tree" -> "tree-based" (DecisionTree is not boosted); (3) min-Linf "0.021-0.033"
+included MLP -> "tree detectors 0.021-0.025 and the MLP 0.033"; (4) cross-scenario
+0.52/0.44 clarified as the mean over the 3 held-out scenarios, not ds2-specific.
+ALL other numbers verified to MATCH (Table 1, F1/AUC/FAR ranges, fragility ranking,
+ds7 deep 0.84, leave-PRN 0.006/0.028, McNemar 74/78, Friedman, bootstrap CIs, latency).
+Stats captured permanently in results/tables/paper_statistics.md (were only in run logs).
+Manuscript recompiles clean after fixes (0 undefined, 0 overfull, 20 pp).
+
+REMAINING POLISH (not blocking): (1) [DONE above] number-consistency sweep;
+(2) optional figures F4/F7 (MATLAB acqData / multi-correlator) + F9 (enforcer realizability);
+(3) author bios/affiliation final check; (4) proofread pass; (5) capture the McNemar/Friedman
+console numbers into a saved table (currently only in ledger); (6) update PROJECT docs.
 
 ## 9. Manuscript section-by-section edit checklist (the `.tex`)
 
@@ -441,6 +515,154 @@ Paper-1 (2026-07-14, to be refreshed tonight) + Paper-2 files.
 **Stats capture:** 19/22 print to console only (no to_csv) -> `run_pipeline_stage2.py`
 phase 1 tees every stage's stdout to `results/tables/_stage2_logs/NN_name_log.txt`,
 fixing this for all 6 remaining stages, not just 19/22.
+
+---
+
+## Proofread + final-formatting pass (2026-07-20)
+
+Full read-through of `papers/paper1-satnav/` for a no-error submission.
+
+- **Numeric re-verify:** reran `verify_numbers.py` against all source CSVs; every cited
+  number matches (clean F1 0.736-0.843, FAR 0.30-0.69, AUC 0.803-0.903; fragility GB
+  0.0095 most-fragile -> KNN 0.1009 hardest, tree cluster 0.021-0.025, MLP 0.033, deep
+  0.040-0.071; domain ASR max 0.193; x-scenario recall classical 0.528 / deep 0.442; ds2
+  min RF 0.090; ds7 two deep >=0.84 CNN-1D 0.844 & TCN 0.840; leave-PRN BiLSTM 0.006,
+  GB 0.028; McNemar 74/78; Friedman deep chi2 22.9 / classical 26.9).
+- **Fixed 1 factual text/Table-1 mismatch** (the GPS-Solutions failure class): results.tex
+  said BiLSTM (F1 0.789) "sits above three classical models"; it sits above only
+  DecisionTree (0.787) and KNN (0.755) — MLP is 0.799. Changed to "two classical models".
+- **Oxford-comma sweep:** normalised all serial lists to no-Oxford house style (abstract,
+  intro roadmap + PNT/domains, related-work 2 lists, signal-model observable + spoofer
+  lists, methods baseline/detector lists, discussion caption). Compound-sentence commas
+  left intact.
+- **Reference-macro consistency:** all figure refs now `Figure~\ref` (1 stray `(Fig.~...)`
+  in intro fixed); Table~ and Section~ already uniform; 0 hard-coded fig/table numbers;
+  0 em/en dashes anywhere.
+- **Front matter verified** (rendered p.1): title, 3 authors + affil markers, RCSSTEAP/
+  Beihang [1] + FUT Owerri [2], corresponding ahmedwasiu24@buaa.edu.cn — all correct.
+- **New modern figures verified in-page** (rendered pp.18-19): Fig.9 rank-inversion slope
+  (clean-F1 vs robustness ranks, visibly reversed) and Fig.10 parallel-coordinates
+  (GB best-clean/worst-robust, KNN mirror) — both legible, correct data, legends clean.
+- **Build:** 23 pp, 0 undefined citations, 0 undefined refs, 0 errors, 0 overfull >5pt.
+
+**Still open (user actions):** F7 SQM figure needs one MATLAB multi-correlator pass
+(`addpath(genpath('...FGI-GSRx'))`, ds7 config with `enableMultiCorrelatorTracking=true`,
+`mulCorrFingers,[-2:0.25:2]`, send new `trackData_ds7` .mat); then correlation-magnitude
+vs code-offset plot for authentic (t<110s) vs spoofed (t>150s).
+
+---
+
+## F7 SQM built from real data + F2 correction + authorship (2026-07-21)
+
+Multi-correlator pass finished (user ran gsrx with `enableMultiCorrelatorTracking=true`,
+`mulCorrFingers=[-2:0.25:2]`); `data/FGI_Data/out/trackData_ds7_full.mat` now carries
+`mulCorrFingersOut` (250000 epochs x 17 taps) for all 10 PRNs. So F7 is the REAL figure,
+not the placeholder that was drafted.
+
+- **F7 (`fig07_sqm.pdf`, now Fig. 4), generator `manuscript/.../make_f7.py`:** PRN 23,
+  authentic (t<110 s) vs spoofed (t>150 s), each correlation function normalised to peak.
+  Panel (a) overlay (near-coincident), panel (b) spoofed-minus-authentic residual. Honest
+  finding: ds7 leaves only a SMALL correlator distortion (peak stays at 0 offset; off-peak
+  floor rises, late shoulder slightly suppressed; |residual| <= ~0.02 = 2% of peak). This
+  is the correct story for a power-matched, carrier-phase-aligned takeover and reinforces
+  the need for multi-observable learned detection.
+- **F2 (`fig02...`, Fig. 3) CORRECTED** (found during F7 consistency check): old caption/
+  text claimed "the C/N0 and delay-lock discriminator diverge through the 110-150 s
+  takeover". Data says otherwise: dllDiscr mean ~0 in all windows (only variance rises);
+  the real signature is C/N0 settling ~2 dB below authentic AFTER the takeover, Doppler
+  matched. Also the ds7 trace was being straight-line-interpolated across the discarded
+  [110,150] gap (a visual artifact). Fixed `make_figures.py fig_f2` to break lines at
+  gaps (NaN insert), and rewrote the caption + body text to: "after the takeover C/N0
+  settles ~2 dB below authentic, Doppler matched, DLL near zero; shaded band excluded
+  from corpus". Now consistent with F7.
+- **Authorship:** Joel Segun Ojerinde promoted to co-corresponding (`\author*` + email
+  joelojerinde@gmail.com). Both Joel and Wasiu Akande Ahmed now corresponding. NOTE:
+  sn-jnl lists corresponding emails in author (source) order, so Joel's appears first
+  (he is first author); "Ahmed first in the corresponding line" is not achievable without
+  making Ahmed first author. Flagged to user; email may be swapped for an institutional
+  address. A FOURTH author (a Beihang faculty member in-line, TBC by Dr Ahmed) is to be
+  added later.
+- **Build:** 23 pp, 0 undefined citations/refs, 0 errors, 0 overfull. Figure count now
+  11 in-text + Table 1 (F7 added; figure numbers after Fig. 3 shifted +1, all via \ref).
+
+---
+
+## Full reference + metric audit (2026-07-21)
+
+Rigorous end-to-end verification (internal recompute + internet + provided reference
+PDFs in `papers/references/`). No hallucination: every cited external metric checked
+against full text.
+
+- **Own results:** `verify_numbers.py` re-run; every cited number matches source CSVs
+  (Table 1, abstract, results, discussion, conclusion, all captions). F2/F7 consistent.
+- **Cite reconciliation:** 43 keys used, all defined in `references.bib`; 14 unused
+  leftover entries (harmless, not emitted by bibtex).
+- **Verified against provided PDFs:** romaniuc max F1 = **90.7%** (matches "near 0.90");
+  yang BAC-3 weighted F1 = **0.9742** (matches "0.97") + BiLSTM-Attention-CNN architecture;
+  mahroof kNN on **ds3 and ds8** (exact); jullian implements+compares **MLP and LSTM**
+  (matches "recurrent"); iqbal VAE+GAN trained on a **single (genuine) class** (matches
+  "one-class"). Verified online: An 2025 (DLSA+SNA vs SVM, position domain, 99.9%->20.4%),
+  Song 2026 (>92.7% ARR / 10 unseen scenarios), + all table-paper metadata/DOIs.
+- **3 corrections made (were wrong/overstated):**
+  1. **sung** -- was "1D CNN on *correlator outputs*"; paper uses **signal-strength
+     features** (SNR mean/std/difference). Fixed in related_work + bib title
+     ("convolution" not "convolutional").
+  2. **borhani-darian** -- was "*bank of parallel networks* ... *carrier-to-noise
+     ratio*"; paper is a **parallelized DNN** over CAF images reporting gains at
+     moderate-to-high **signal-to-noise ratio**. Fixed both.
+  3. **Song "drop toward chance"** (4 places: intro/related/discussion/conclusion) --
+     actual baselines retain **46-83% ARR** (CNN ~69%, LSTM ~74%, Transformer ~83%), so
+     softened to "lose accuracy" / "generalization loss"; kept the verified ">0.92
+     retention across ten scenarios".
+- **Canonical method cites** (goodfellow/madry/athalye/carlini/papernot/liu/szegedy/
+  brendel/vaswani/breiman/friedman/xgboost/lightgbm/bai/hochreiter/dietterich/demsar):
+  correct, PDFs present for most, standard DOIs.
+- **Build:** 23 pp, 0 undefined citations/refs, 0 errors, 0 overfull. Nothing left
+  unverified.
+
+**Project docs updated (2026-07-21):** `Masters_Research_Proposal.md`,
+`PROJECT_EXPLAINED.md`, `NAV_EXPORT_RUNBOOK.md` -- P1 status set to "Satellite
+Navigation, draft complete" (was "GPS Solutions, under review"); dated P1 note added to
+PROJECT_EXPLAINED; runbook status note added (verified; workflow reused for F7 SQM).
+
+**Follow-ups (2026-07-22):**
+- **4th bib error found + fixed** (during reference-PDF mapping): `lin2024sar` was
+  "Remote Sens. 16(3):596, 2024, doi 10.3390/rs16030596" -- the PDF is actually
+  Remote Sens. **15(10):2699, 2023, doi 10.3390/rs15102699** (Lin et al.). Corrected.
+- **Authorship changed to Dr Ahmed SOLE corresponding** (Joel reverted to first author
+  only, no `\author*`). Byline: Ojerinde[1], Ahmed*[1], Akande[2]; corresponding line
+  shows only ahmedwasiu24@buaa.edu.cn. This is the student-first-author /
+  supervisor-corresponding convention (sn-jnl ties corresponding-email order to byline
+  order, so this is the clean way to have Ahmed as the corresponding contact).
+- **Reference PDFs copied** to `papers/paper1-satnav/references/`, renamed to
+  BibTeX keys: 33 of 43 cited refs present; 9 missing (an2025, brendel2018decision,
+  carlini2019evaluating, chen2020hopskipjump, humphreys2012texbat, humphreys2016texbatds78,
+  kerns2014uav, li2025realtime, song2026generalized); fgigsrx is software. Shared library
+  in `papers/references/` kept intact for P2/P3. Manifest: `references/REFERENCES_MANIFEST.md`.
+- Build still clean: 23 pp, 0 undefined/errors.
+
+**Second full sweep + citekey-year cleanup (2026-07-22):**
+- User downloaded 5 of the 9 missing PDFs (an2025, brendel2018decision, song2026,
+  chen2020hopskipjump, carlini2019). All 5 verified against full text: authors, venue,
+  year, DOI exact; an2025 "open question re other architectures under black-box"
+  confirmed verbatim in its future-work; song2026 ARR ">92.70% across 10 unseen
+  scenarios" exact and baselines beaten by 9.4-46.2 pts (so retain ~46-83%, confirming
+  the earlier "lose accuracy" softening, not "toward chance"). Now 38/43 PDFs local.
+- kerns2014uav + li2025realtime verified from user-pasted citations (J. Field Robot.
+  2014 31(4):617-636, doi 10.1002/rob.21513; GPS Solut. 29(1):45, doi
+  10.1007/s10291-024-01802-8). NOTE: li2025realtime was published online 26 Dec 2024 but
+  Springer assigns it to vol 29 = 2025, so the citation year is 2025 (kept).
+- **9 citekeys renamed so key-year = actual publication year** (full year audit found
+  they were internally inconsistent; bib YEAR fields were already correct):
+  borhanidarian2022->2024deep, chen2023->2022svm, iqbal2022->2024deep,
+  jullian2023->2022deep, lin2024->2023sar, mahroof2022->2024ml, romaniuc2023->2025lstm,
+  sung2023->2022cnn, yang2024->2025deep. Applied across bib + all .tex + PDF filenames.
+- All reference PDFs in `Satellite_Navigation/references/` are now named `<citekey>.pdf`
+  (key year = pub year); manifest refreshed.
+- Final audit: 0 key/year mismatches, 0 undefined citations/refs, 0 errors, 0 overfull.
+  Every one of the 43 cited references verified (full text where available, else
+  user-supplied citation / canonical). Total bib/attribution fixes across both sweeps:
+  sung, borhani-darian, Song wording, lin metadata, + 9 citekey-year corrections.
 
 ---
 

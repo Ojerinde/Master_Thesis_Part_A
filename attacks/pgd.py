@@ -37,7 +37,8 @@ class PGDAttack:
     Parameters
     ----------
     model_wrapper : fitted DL model wrapper
-    epsilon       : total L-inf perturbation budget (normalised space)
+    epsilon       : total L-inf perturbation budget in the min-max [0,1] space
+                    (a fraction of each observable's training range)
     alpha         : step size per iteration (default: epsilon / 4)
     num_iter      : PGD steps. 40 is the community standard for thorough
                     evaluation (Madry et al., 2018).

@@ -29,11 +29,11 @@ function export_texbat_track(varargin)
 %                onsetLo = inf marks the whole recording genuine (cleanStatic).
 %   decim      - keep every decim-th 1 ms epoch (50 -> 20 Hz feature cadence)
 
-fgiRoot = 'D:\BEIHANG UNIVERSITY\Research\FGI-GSRx';
+fgiRoot = 'D:\BEIHANG UNIVERSITY\Research\code\FGI-GSRx';
 if isfolder(fgiRoot), addpath(genpath(fgiRoot)); end
 
-trackRoot  = 'D:\BEIHANG UNIVERSITY\Research\FGI_Data\out';
-dstDefault = ['D:\BEIHANG UNIVERSITY\Research\gnss_adversarial_research\' ...
+trackRoot  = 'D:\BEIHANG UNIVERSITY\Research\data\FGI_Data\out';
+dstDefault = ['D:\BEIHANG UNIVERSITY\Research\code\gnss_adversarial_research\' ...
               'data\processed\texbat_track_combined.csv'];
 
 % Authoritative TEXBAT onsets (Humphreys, TEXBAT ds7/ds8 doc; ION 2012 [27]):

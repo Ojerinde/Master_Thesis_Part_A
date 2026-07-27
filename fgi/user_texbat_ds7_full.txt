@@ -23,7 +23,7 @@ sys,msToSkip,0e3,
 sys,loadDataFile,false,
 sys,dataFileIn,'',
 sys,saveDataFile,true,
-sys,dataFileOut,'D:\BEIHANG UNIVERSITY\Research\FGI_Data\out\trackData_ds7_full.mat',
+sys,dataFileOut,'D:\BEIHANG UNIVERSITY\Research\data\FGI_Data\out\trackData_ds7_full.mat',
 sys,loadIONMetaDataReading,false,
 sys,metaDataFileIn,''
 
@@ -36,12 +36,15 @@ sys,showTrackingOutput,false,
 % Tracking mode: sequential (memory-safe on 16 GB)
 sys,parallelChannelTracking,false,
 sys,PCTenabled,false,
-sys,currentWorkingDirectoryForFGIGSRx,'D:\BEIHANG UNIVERSITY\Research\FGI-GSRx\',
-sys,trackDataFilePath,'D:\BEIHANG UNIVERSITY\Research\FGI_Data\out\',
+sys,currentWorkingDirectoryForFGIGSRx,'D:\BEIHANG UNIVERSITY\Research\code\FGI-GSRx\',
+sys,trackDataFilePath,'D:\BEIHANG UNIVERSITY\Research\data\FGI_Data\out\',
 
 % Multi-correlator OFF for the first pass (base observables only; SQM added and
 % validated in a second pass once the base pipeline is confirmed end-to-end).
-sys,enableMultiCorrelatorTracking,false,
+sys,enableMultiCorrelatorTracking,true,       % was false
+sys,multiCorrelatorTrackingChannel,1,         % channel to instrument (1 = strongest)
+sys,mulCorrFingers,[-2:0.25:2],               % 17 taps across +/-2 chips
+
 
 % Navigation (position stats only; NOT used by Paper-1 track-only features)
 nav,navSolPeriod,100,
@@ -56,7 +59,7 @@ nav,trueHeight,165.0,
 
 % GPS L1 front end (TEXBAT: 25 Msps, complex, 16+16-bit, L1 baseband)
 gpsl1,frontEnd,'TEXBAT',
-gpsl1,rfFileName,'D:\BEIHANG UNIVERSITY\Research\gnss_adversarial_research\data\raw\texbat\ds7.bin',
+gpsl1,rfFileName,'D:\BEIHANG UNIVERSITY\Research\code\gnss_adversarial_research\data\raw\texbat\ds7.bin',
 gpsl1,centerFrequency,1575420000,
 gpsl1,samplingFreq,25000000,
 gpsl1,bandWidth,2000000,

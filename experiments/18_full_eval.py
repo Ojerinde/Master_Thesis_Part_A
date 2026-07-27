@@ -23,7 +23,7 @@ import torch.nn as nn
 
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
-from sklearn.preprocessing import StandardScaler                # noqa: E402
+from sklearn.preprocessing import MinMaxScaler                # noqa: E402
 from sklearn.model_selection import train_test_split            # noqa: E402
 from sklearn.metrics import recall_score, f1_score              # noqa: E402
 from data.loader import load_track_splits                       # noqa: E402
@@ -184,7 +184,13 @@ def main():
         rows.append(dict(model=name, family='classical', attack='clean', eps=0,
                          recall=round(rc, 4), f1=round(fc, 4), asr=np.nan, tau=round(tau, 4)))
         for eps in EPS:
-            dom = dom_attacks(Xs_e.astype(np.float32), ys, enf_clf, eps)
+            # Domain attacks generated in the SAME min-max [0,1] space as the deep
+            # models (so the budget is a min-max L-inf distance), then inverse-
+            # transformed to physical for the classical Pipeline, which re-applies
+            # the identical MinMax internally (a round trip). This removes the old
+            # unscaled-space classical budget that was not comparable across models.
+            dom = dom_attacks(Xs_s, ys, enf_dl, eps)
+            dom = {k: sc.inverse_transform(v).astype(np.float64) for k, v in dom.items()}
             items = [('PGD-Transfer', transfer_eng[('single', eps)]),
                      ('PGD-Transfer-Multi', transfer_eng[('multi', eps)]),
                      ('DLSA', dom['DLSA']), ('SNA', dom['SNA']), ('TPA', dom['TPA'])]

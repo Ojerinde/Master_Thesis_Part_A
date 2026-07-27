@@ -14,7 +14,7 @@ from scipy.stats import binom
 
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
-from sklearn.preprocessing import StandardScaler                # noqa: E402
+from sklearn.preprocessing import MinMaxScaler                # noqa: E402
 from sklearn.model_selection import train_test_split            # noqa: E402
 from sklearn.metrics import recall_score                        # noqa: E402
 from data.loader import load_track_splits                       # noqa: E402

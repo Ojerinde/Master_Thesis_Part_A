@@ -22,7 +22,7 @@ project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 from config.paths import TABLES_DIR  # noqa: E402
 
-FIG_DIR = Path(r"D:\BEIHANG UNIVERSITY\Research\manuscript\GPS_Solutions_sn\figures")
+FIG_DIR = Path(r"D:\BEIHANG UNIVERSITY\Research\papers\_archive\GPS_Solutions_sn\figures")
 C_CLASSICAL = '#2c7fb8'
 C_DEEP = '#d95f0e'
 plt.rcParams.update({'font.size': 11, 'figure.dpi': 150})

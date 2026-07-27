@@ -42,9 +42,10 @@ class FGSMAttack:
     Parameters
     ----------
     model_wrapper : fitted DL model wrapper (has .model nn.Module attribute)
-    epsilon       : L-inf perturbation budget in normalised feature space.
-                    epsilon=0.10 ≈ ±196 Hz Doppler or ±0.52 dB CN0
-                    (Kaplan & Hegarty, 2017).
+    epsilon       : L-inf perturbation budget in the min-max [0,1] feature space.
+                    A budget is a fraction of each observable's training range,
+                    e.g. epsilon=0.10 on C/N0 (training span ~57 dB) is ~5.7 dB;
+                    on Doppler (~4 kHz span) it is ~400 Hz.
     gnss_enforcer : pre-fitted GNSSConstraintEnforcer from main().
                     If None, no physical bound clipping is applied.
     feature_names : kept for API compatibility; not used when enforcer

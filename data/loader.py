@@ -402,9 +402,11 @@ def load_track_splits(scenarios=None, train_frac=0.70, val_frac=0.10,
                                  models apply `scaler.transform(...)`.
         y_train, y_val, y_test : int labels (0=genuine, 1=spoof).
         feature_names          : the observable column names.
-        scaler                 : StandardScaler fitted on the train block.
+        scaler                 : MinMaxScaler fitted on the train block, so every
+                                 model and every attack operates in one common
+                                 min-max [0,1] feature space (budgets comparable).
     """
-    from sklearn.preprocessing import StandardScaler
+    from sklearn.preprocessing import MinMaxScaler
 
     df, feats = load_texbat_track(verbose=verbose, validate=True,
                                   scenarios=scenarios)
@@ -423,7 +425,7 @@ def load_track_splits(scenarios=None, train_frac=0.70, val_frac=0.10,
     te = np.concatenate(te)
     X = df[feats].values.astype(np.float64)
     y = df['label'].values.astype(int)
-    scaler = StandardScaler().fit(X[tr])
+    scaler = MinMaxScaler().fit(X[tr])
     if verbose:
         print(f"  block-temporal split (purge={purge} epochs): "
               f"train={len(tr):,}  val={len(va):,}  test={len(te):,}")

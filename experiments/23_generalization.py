@@ -26,7 +26,7 @@ import pandas as pd
 
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
-from sklearn.preprocessing import StandardScaler                       # noqa: E402
+from sklearn.preprocessing import MinMaxScaler                       # noqa: E402
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier  # noqa: E402
 from sklearn.neighbors import KNeighborsClassifier                     # noqa: E402
 from sklearn.neural_network import MLPClassifier                       # noqa: E402
@@ -53,10 +53,10 @@ def classical_zoo():
     """Same 7 architectures / hyperparameters as the main run (RandomForest uses
     the SMOTE pipeline; Pipelines scale internally so they take unscaled X)."""
     def std(e):
-        return Pipeline([('sc', StandardScaler()), ('m', e)])
+        return Pipeline([('sc', MinMaxScaler()), ('m', e)])
 
     def smote(e):
-        return ImbPipeline([('sc', StandardScaler()),
+        return ImbPipeline([('sc', MinMaxScaler()),
                             ('sm', SMOTE(random_state=42, k_neighbors=5)), ('m', e)])
     return {
         'RandomForest':     smote(RandomForestClassifier(**get_config('random_forest'))),
@@ -123,7 +123,7 @@ def eval_fold(df, feats, tr_idx, te_idx, with_dl, epochs=None, max_n=None, batch
     Xte = df.loc[te_idx, feats].values.astype(np.float64); yte = df.loc[te_idx, 'label'].values.astype(int)
     if len(np.unique(ytr)) < 2 or len(np.unique(yte)) < 2 or len(np.unique(yva)) < 2:
         return []   # degenerate fold (single-class train/val/test) -> skip
-    sc = StandardScaler().fit(Xtr)
+    sc = MinMaxScaler().fit(Xtr)
     rows = []
     for name, mdl in classical_zoo().items():
         mdl.fit(Xtr, ytr)

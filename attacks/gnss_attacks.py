@@ -117,7 +117,12 @@ class DataLocationShiftAttack:
         if self.enforcer is not None:
             X_adv = self.enforcer.clip_to_gnss_bounds(X_adv)
 
-        return X_adv
+        # Re-project onto the L-inf budget after the enforcer, so the enforcer's
+        # clipping of pre-existing outliers cannot inflate the realized budget
+        # beyond shift_scale (same guard as FGSM/PGD; keeps budgets comparable).
+        X_adv = np.clip(X_adv, X - self.shift_scale, X + self.shift_scale)
+
+        return X_adv.astype(np.float32)
 
 
 # ============================================================================
@@ -167,7 +172,12 @@ class SimilarityNoiseAttack:
         if self.enforcer is not None:
             X_adv = self.enforcer.clip_to_gnss_bounds(X_adv)
 
-        return X_adv
+        # Re-project onto the L-inf budget after the enforcer (see DLSA). The L2
+        # ball of radius epsilon already has L-inf <= epsilon; this also caps any
+        # outlier clipping the enforcer introduces.
+        X_adv = np.clip(X_adv, X - self.epsilon, X + self.epsilon)
+
+        return X_adv.astype(np.float32)
 
 
 # ============================================================================
@@ -237,4 +247,10 @@ class TemporalPatternAttack:
         if self.enforcer is not None:
             X_adv = self.enforcer.clip_to_gnss_bounds(X_adv)
 
-        return X_adv
+        # Re-project onto the L-inf budget after the enforcer (see DLSA). The
+        # budget is the larger of the two amplitudes; the small ramp jitter beyond
+        # it is clipped, so the realized budget stays <= amplitude and comparable.
+        b = max(self.doppler_amp, self.cn0_amp)
+        X_adv = np.clip(X_adv, X - b, X + b)
+
+        return X_adv.astype(np.float32)

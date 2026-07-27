@@ -35,7 +35,7 @@ project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
 from sklearn.model_selection import train_test_split            # noqa: E402
-from sklearn.preprocessing import StandardScaler                # noqa: E402
+from sklearn.preprocessing import MinMaxScaler                # noqa: E402
 from sklearn.metrics import recall_score                        # noqa: E402
 import torch                                                    # noqa: E402
 import joblib as _joblib                                        # noqa: E402,F401
@@ -165,7 +165,7 @@ def run_target(name, family, proba_eng, val_eng, test_eng, y_val, y_test,
     rng = np.random.default_rng(seed)
     correct_spoof = np.where((y_test == 1) & (p_test >= tau))[0]
     if len(correct_spoof) == 0:
-        return []
+        return [], np.array([])
     idx = (rng.choice(correct_spoof, size=n_samples, replace=False)
            if len(correct_spoof) > n_samples else correct_spoof)
     Xs = to_norm(test_eng[idx])
@@ -190,7 +190,7 @@ def run_target(name, family, proba_eng, val_eng, test_eng, y_val, y_test,
                      'asr': round(asr, 4),
                      'median_min_linf': round(float(np.median(linf)), 4),
                      'gen_time_s': round(gen_time, 1)})
-    return rows
+    return rows, linf
 
 
 def load_dl(name, cfg_name, input_dim):
@@ -235,19 +235,26 @@ def main():
         n_samples, n_anchors, out_tag = 500, 12, ''
 
     all_rows = []
+    persample = []
     for name, family, proba_eng in targets:
         print(f"\n=== BoundaryAttack: {name} ({family}, N={n_samples}) ===")
-        rows = run_target(name, family, proba_eng, X_val_eng, X_test_eng,
-                          y_val, y_test, fmin, span, n_samples, n_anchors)
+        rows, linf = run_target(name, family, proba_eng, X_val_eng, X_test_eng,
+                                y_val, y_test, fmin, span, n_samples, n_anchors)
         for r in rows:
             print(f"  eps={r['epsilon']}: ASR={r['asr']} "
                   f"med_min_linf={r['median_min_linf']} t={r['gen_time_s']}s")
         all_rows.extend(rows)
+        for v in linf:
+            persample.append({'model': name, 'family': family, 'min_linf': float(v)})
 
     df = pd.DataFrame(all_rows)
     out = TABLES_DIR / f'blackbox_boundary_all{out_tag}.csv'
     df.to_csv(out, index=False)
     print(f"\nWrote {out}")
+    ps = pd.DataFrame(persample)
+    psout = TABLES_DIR / f'blackbox_boundary_persample{out_tag}.csv'
+    ps.to_csv(psout, index=False)
+    print(f"Wrote {psout}  ({len(ps)} per-sample rows)")
 
 
 if __name__ == '__main__':

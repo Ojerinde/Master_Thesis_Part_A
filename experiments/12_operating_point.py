@@ -9,7 +9,7 @@ safety-first sensitivity floor), then reports clean-TEST metrics at that point.
 
 It reuses the exact data pipeline and model set of 03_adversarial_evaluation.py
 (deterministic split random_state=42; classical models take unscaled engineered
-input, DL models take StandardScaler-scaled input).
+input, DL models take MinMaxScaler-scaled input).
 
 Outputs:
   results/tables/operating_point_recall95.csv   (per-model tau + clean metrics)
@@ -24,7 +24,7 @@ import numpy as np
 import pandas as pd
 import torch
 import joblib
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import MinMaxScaler
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import (
     accuracy_score, f1_score, precision_score, recall_score, roc_auc_score,
@@ -66,7 +66,7 @@ DL_REGISTRY = {
 def load_and_preprocess():
     """Leakage-free block-temporal split (shared load_track_splits). Classical
     models take the UNSCALED 9 observables (their Pipelines scale internally); DL
-    models take the StandardScaler-scaled version. Same partition as 01/02."""
+    models take the MinMaxScaler-scaled version. Same partition as 01/02."""
     (_X_train, X_val_eng, X_test_eng, _y_train, y_val, y_test,
      feat_names, scaler) = load_track_splits(verbose=False)
     X_val_eng = X_val_eng.astype(np.float64)
