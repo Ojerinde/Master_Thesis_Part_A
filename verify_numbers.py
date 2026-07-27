@@ -44,6 +44,14 @@ print(f"classical excl KNN excl GB range: "
 print(f"deep range: {dp.min():.4f} .. {dp.max():.4f}")
 print(f"KNN: {d[d.model=='KNN'].median_min_linf.iloc[0]:.4f}")
 
+sec("ADVERSARIAL  (blackbox_boundary_ci.csv): 95% bootstrap CI on the median (Fig 6/7, results.tex text)")
+ci = pd.read_csv(TAB / "blackbox_boundary_ci.csv").sort_values("median_min_linf")
+print(ci.to_string(index=False))
+tree_cluster = ci[ci.model.isin(["LightGBM", "XGBoost", "DecisionTree", "RandomForest"])]
+print(f"\ntree cluster (LightGBM/XGBoost/DecisionTree/RandomForest) CI overlap check "
+      f"(results.tex claims their internal ranking is unresolved):")
+print(tree_cluster[["model", "median_min_linf", "ci_lo", "ci_hi"]].to_string(index=False))
+
 sec("ADVERSARIAL  (adversarial_full_oppoint.csv): domain-attack max ASR")
 ad = pd.read_csv(TAB / "adversarial_full_oppoint.csv")
 dom = ad[ad.attack.isin(["DLSA", "SNA", "TPA"])]
