@@ -42,7 +42,15 @@ one-dimensional convolutional network, a long short-term memory network
 Transformer \citep{vaswani2017attention} and a temporal convolutional network
 \citep{bai2018empirical}. The multilayer perceptron is a shallow feed-forward model and
 is grouped with the classical detectors. Each model consumes the nine observables of
-Section~\ref{sec:features}.
+Section~\ref{sec:features}. The thirteen span the classifier families used across the
+cited detection literature of Section~\ref{sec:related}: tree ensembles and boosting,
+instance-based classification, a shallow feed-forward network, and, among the deep
+models, the convolutional, recurrent, hybrid and attention-based branches of sequence
+modelling. A linear classifier, the family of the support-vector machine that
+\citet{an2025adversarial} attack, was also trained on this corpus and separates the
+classes far worse than every detector in Table~\ref{tab:oppoint}, so a linear model is
+excluded from the thirteen attacked: a detector that does not separate the classes to
+begin with is not an informative adversarial-robustness test.
 
 \subsection{Common operating point}
 \label{sec:oppoint}
