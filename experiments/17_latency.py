@@ -31,7 +31,7 @@ from models.deep_learning import (                               # noqa: E402
 SELECTED_CLASSICAL = {
     'RandomForest': 'RandomForest_default', 'XGBoost': 'XGBoost_default',
     'LightGBM': 'LightGBM_default', 'GradientBoosting': 'GradientBoosting',
-    'KNN': 'KNN', 'MLP': 'MLP', 'DecisionTree': 'DecisionTree'}
+    'KNN': 'KNN', 'MLP': 'MLP', 'DecisionTree': 'DecisionTree', 'SVM': 'SVM'}
 DL_REGISTRY = {
     'CNN-1D': (CNN1DModel, 'cnn_1d'), 'LSTM': (LSTMModel, 'lstm'),
     'BiLSTM': (BiLSTMModel, 'bilstm'), 'CNN-LSTM': (CNNLSTMModel, 'cnn_lstm'),

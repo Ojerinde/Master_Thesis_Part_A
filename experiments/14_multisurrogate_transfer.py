@@ -51,6 +51,7 @@ SELECTED_CLASSICAL = {
     'KNN':              'KNN',
     'MLP':              'MLP',
     'DecisionTree':     'DecisionTree',
+    'SVM':              'SVM',
 }
 
 

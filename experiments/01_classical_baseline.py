@@ -147,6 +147,60 @@ def _lr_base(class_weight=None):
     return LogisticRegression(**cfg)
 
 
+# RBF-kernel SVM (the family the direct comparator, An et al. 2025, attacks).
+# sklearn's SVC scales roughly O(n^2)-O(n^3) in sample count -- impractical at
+# 144,900 training rows on CPU. Prefer cuML's GPU-accelerated SVC (a genuine,
+# exact RBF-kernel SVM, no approximation) when RAPIDS is available (Kaggle GPU
+# sessions). Otherwise fall back to the standard scalable RBF-kernel
+# approximation: random Fourier features (Rahimi & Recht, "Random Features for
+# Large-Scale Kernel Machines," NeurIPS 2007) feeding a linear classifier --
+# scales linearly in N rather than quadratically/cubically, and is a
+# documented, citable technique rather than an ad-hoc subsample.
+try:
+    from cuml.svm import SVC as _CumlSVC   # noqa: E402
+    _SVM_BACKEND = 'cuml (GPU, exact RBF kernel)'
+except ImportError:
+    _CumlSVC = None
+    _SVM_BACKEND = 'sklearn RBFSampler + SGDClassifier (CPU, RFF approximation)'
+print(f"SVM backend: {_SVM_BACKEND}")
+
+
+def _svm_rff_fallback(cfg):
+    """CPU-safe RBF-kernel approximation: random Fourier features + linear
+    classifier (Rahimi & Recht, NeurIPS 2007). Used whenever cuML is absent
+    OR its constructor doesn't accept the kwargs below (API mismatch)."""
+    from sklearn.kernel_approximation import RBFSampler
+    from sklearn.linear_model import SGDClassifier
+    # RBFSampler.gamma must be a float (unlike SVC, it has no 'scale'/'auto'
+    # string convention); 1/n_features on [0,1]-scaled data is a standard,
+    # reasonable default (sklearn's own pre-'scale'-option SVC default).
+    rff_gamma = cfg['gamma'] if isinstance(cfg['gamma'], (int, float)) else 1.0 / 9
+    return Pipeline([
+        ("rff", RBFSampler(gamma=rff_gamma, n_components=500,
+                           random_state=cfg['random_state'])),
+        ("sgd", SGDClassifier(loss='modified_huber', class_weight=cfg['class_weight'],
+                              random_state=cfg['random_state'], max_iter=2000,
+                              tol=cfg['tol'])),
+    ])
+
+
+def _svm_rbf_base():
+    global _SVM_BACKEND
+    cfg = get_config('svm_rbf')
+    if _CumlSVC is not None:
+        try:
+            return _CumlSVC(C=cfg['C'], kernel='rbf', gamma=cfg['gamma'],
+                            class_weight=cfg['class_weight'], probability=True)
+        except Exception as exc:
+            # cuML present but its constructor rejected these kwargs (API
+            # mismatch across RAPIDS versions) -- fall back rather than crash
+            # the whole run over one model.
+            print(f"  [WARN] cuml.svm.SVC construction failed ({exc}); "
+                  f"falling back to the CPU RFF approximation for this run.")
+            _SVM_BACKEND = 'sklearn RBFSampler + SGDClassifier (CPU fallback after cuML error)'
+    return _svm_rff_fallback(cfg)
+
+
 def build_classical_models(pos_neg_ratio: float = 1.0) -> dict:
     """Build all classical models as Pipelines with internal MinMaxScaler.
     Returns dict of model_name -> Pipeline. Expects unscaled input.
@@ -209,6 +263,7 @@ def build_classical_models(pos_neg_ratio: float = 1.0) -> dict:
             validation_fraction=0.1,
         )
     )
+    models["SVM"] = std_pipe(_svm_rbf_base())
 
     return models
 

@@ -48,9 +48,41 @@ DL = {'CNN-1D': (CNN1DModel, 'cnn_1d'), 'LSTM': (LSTMModel, 'lstm'),
       'BiLSTM': (BiLSTMModel, 'bilstm'), 'CNN-LSTM': (CNNLSTMModel, 'cnn_lstm'),
       'Transformer': (TransformerModel, 'transformer'), 'TCN': (TCNModel, 'tcn')}
 
+try:
+    from cuml.svm import SVC as _CumlSVC   # noqa: E402
+except ImportError:
+    _CumlSVC = None
+
+
+def _svm_rbf_base():
+    """Same fallback strategy as 01_classical_baseline.py::_svm_rbf_base --
+    duplicated rather than imported because experiments/01_classical_baseline.py
+    starts with a digit and is not import-able as a module. cuML's exact,
+    GPU-accelerated RBF-kernel SVC when available (this file retrains 14 folds,
+    so the O(n^2)-O(n^3) CPU sklearn SVC cost is even less tractable than in the
+    main run); otherwise the same random-Fourier-features + linear-classifier
+    approximation (Rahimi & Recht, NeurIPS 2007)."""
+    cfg = get_config('svm_rbf')
+    if _CumlSVC is not None:
+        try:
+            return _CumlSVC(C=cfg['C'], kernel='rbf', gamma=cfg['gamma'],
+                            class_weight=cfg['class_weight'], probability=True)
+        except Exception:
+            pass
+    from sklearn.kernel_approximation import RBFSampler
+    from sklearn.linear_model import SGDClassifier
+    rff_gamma = cfg['gamma'] if isinstance(cfg['gamma'], (int, float)) else 1.0 / 9
+    return Pipeline([
+        ('rff', RBFSampler(gamma=rff_gamma, n_components=500,
+                           random_state=cfg['random_state'])),
+        ('sgd', SGDClassifier(loss='modified_huber', class_weight=cfg['class_weight'],
+                              random_state=cfg['random_state'], max_iter=2000,
+                              tol=cfg['tol'])),
+    ])
+
 
 def classical_zoo():
-    """Same 7 architectures / hyperparameters as the main run (RandomForest uses
+    """Same 8 architectures / hyperparameters as the main run (RandomForest uses
     the SMOTE pipeline; Pipelines scale internally so they take unscaled X)."""
     def std(e):
         return Pipeline([('sc', MinMaxScaler()), ('m', e)])
@@ -67,6 +99,7 @@ def classical_zoo():
         'MLP':              std(MLPClassifier(hidden_layer_sizes=(128, 64), max_iter=1000,
                                               random_state=42, early_stopping=True)),
         'DecisionTree':     std(DecisionTreeClassifier(**get_config('decision_tree'))),
+        'SVM':              std(_svm_rbf_base()),
     }
 
 

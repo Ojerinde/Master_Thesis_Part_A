@@ -39,6 +39,23 @@ LINEAR_SVC_CONFIG = {
     'tol': 1e-4,
 }
 
+# Support Vector Machine (RBF kernel)
+# Rationale: the direct comparator paper (An et al. 2025, "Adversarial Evasion
+# Attacks on SVM-Based GPS Spoofing Detection Systems," Sensors 25(19):6062)
+# attacks an SVM; a linear kernel already failed on this corpus for the same
+# reason LogisticRegression did (not linearly separable), so this must be a
+# non-linear kernel to be a meaningful comparator, not a repeat of that result.
+SVM_RBF_CONFIG = {
+    'C': 1.0,
+    'kernel': 'rbf',
+    'gamma': 'scale',
+    'class_weight': 'balanced',
+    'probability': True,
+    'random_state': 42,
+    'tol': 1e-3,
+    'max_iter': 50000,
+}
+
 # Random Forest
 # Rationale: Ensemble method, robust to outliers
 # Widely used in GNSS research (Rustamov & Closas, 2023)
@@ -264,6 +281,7 @@ def get_config(model_name):
     """Get configuration for a specific model."""
     config_map = {
         'svm_linear':          SVM_LINEAR_CONFIG,
+        'svm_rbf':             SVM_RBF_CONFIG,
         "linearsvc":           LINEAR_SVC_CONFIG,
         'random_forest':       RANDOM_FOREST_CONFIG,
         'gradient_boosting':   GRADIENT_BOOSTING_CONFIG,

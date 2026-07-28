@@ -42,7 +42,7 @@ TARGET_RECALL = 0.95
 N_EVAL = 4000
 CLASSICAL = {'RandomForest': 'RandomForest_default', 'XGBoost': 'XGBoost_default',
              'LightGBM': 'LightGBM_default', 'GradientBoosting': 'GradientBoosting',
-             'KNN': 'KNN', 'MLP': 'MLP', 'DecisionTree': 'DecisionTree'}
+             'KNN': 'KNN', 'MLP': 'MLP', 'DecisionTree': 'DecisionTree', 'SVM': 'SVM'}
 DL = {'CNN-1D': (CNN1DModel, 'cnn_1d'), 'LSTM': (LSTMModel, 'lstm'),
       'BiLSTM': (BiLSTMModel, 'bilstm'), 'CNN-LSTM': (CNNLSTMModel, 'cnn_lstm'),
       'Transformer': (TransformerModel, 'transformer'), 'TCN': (TCNModel, 'tcn')}

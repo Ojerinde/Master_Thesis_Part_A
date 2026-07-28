@@ -6,12 +6,25 @@ Multi-Head Self-Attention Transformer for GNSS spoofing detection.
 Design Rationale:
 - Self-attention captures global dependencies across all GNSS features
   simultaneously, unlike RNNs which process sequentially
-- Each feature is treated as a token; attention learns which feature
-  combinations are discriminative for spoofing detection
+- Each feature is treated as its own token (FT-Transformer-style per-feature
+  tokenizer: Gorishniy et al., "Revisiting Deep Learning Models for Tabular
+  Data," NeurIPS 2021); attention learns which feature combinations are
+  discriminative for spoofing detection. There is no temporal sequence to
+  tokenize across (each sample is one independent epoch, same as every other
+  model in this file), so per-feature tokenization is what gives attention a
+  genuine sequence (seq_len = 9) to operate on at all.
 - LayerNorm + residual connections enable deep, stable training
+- BatchNorm1d on the raw input, before tokenization: nn.Linear-style init
+  assumes roughly unit-variance input; MinMaxScaler output (variance << 1)
+  violates that and was the direct, verified cause of a collapse to a
+  constant predictor (AUC=0.5, identical output regardless of input) on the
+  full corpus. BatchNorm1d restores that assumption regardless of whatever
+  scaler sits upstream.
 
 Reference:
 - Vaswani et al. (2017): Attention Is All You Need
+- Gorishniy, Rubachev, Khrulkov, Babenko (2021): Revisiting Deep Learning
+  Models for Tabular Data (FT-Transformer), NeurIPS 2021, arXiv:2106.11959
 """
 
 from models.deep_learning.base_model import BaseDeepLearningModel
@@ -20,6 +33,25 @@ import numpy as np
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, TensorDataset
+
+
+class _FeatureTokenizer(nn.Module):
+    """Per-feature affine embedding (FT-Transformer's numerical tokenizer):
+    each of the input_dim scalar features gets its own d-dim token,
+    T_j = b_j + x_j * W_j, instead of collapsing all features into one
+    token. Gives self-attention a genuine multi-token sequence (seq_len =
+    input_dim) to learn cross-feature structure over."""
+
+    def __init__(self, input_dim: int, embed_dim: int):
+        super().__init__()
+        self.weight = nn.Parameter(torch.empty(input_dim, embed_dim))
+        self.bias = nn.Parameter(torch.empty(input_dim, embed_dim))
+        nn.init.kaiming_uniform_(self.weight, a=5 ** 0.5)
+        nn.init.zeros_(self.bias)
+
+    def forward(self, x):
+        # x: (batch, input_dim) -> (batch, input_dim, embed_dim)
+        return x.unsqueeze(-1) * self.weight + self.bias
 
 
 class _TransformerBlock(nn.Module):
@@ -55,7 +87,14 @@ class _TransformerNet(nn.Module):
         super().__init__()
 
         embed_dim = ff_dim           # project input to ff_dim
-        self.embedding = nn.Linear(input_dim, embed_dim)
+        # nn.Linear's default init assumes roughly unit-variance input.
+        # MinMaxScaler output lives in [0,1] (variance << 1), which starves the
+        # embedding projection of the input scale its init expects and was the
+        # direct cause of a collapse to a constant predictor (AUC=0.5) on the
+        # full corpus. BatchNorm1d restores that assumption regardless of
+        # whatever scaler sits upstream.
+        self.input_norm = nn.BatchNorm1d(input_dim)
+        self.tokenizer = _FeatureTokenizer(input_dim, embed_dim)
 
         self.blocks = nn.ModuleList([
             _TransformerBlock(embed_dim, num_heads, ff_dim, dropout_rate)
@@ -72,12 +111,12 @@ class _TransformerNet(nn.Module):
         self.mlp = nn.Sequential(*mlp_layers)
 
     def forward(self, x):
-        # x: (batch, features)  →  treat as (batch, 1, features) sequence
-        x = x.unsqueeze(1)                 # (batch, 1, features)
-        x = self.embedding(x)              # (batch, 1, embed_dim)
+        # x: (batch, features)
+        x = self.input_norm(x)
+        x = self.tokenizer(x)              # (batch, features, embed_dim): seq_len = features
         for block in self.blocks:
             x = block(x)
-        x = x.mean(dim=1)                  # global average pooling over seq
+        x = x.mean(dim=1)                  # average pool over the per-feature tokens
         return self.mlp(x).squeeze(-1)
 
 

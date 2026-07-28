@@ -52,6 +52,7 @@ SELECTED_CLASSICAL = {
     'KNN':              'KNN',
     'MLP':              'MLP',
     'DecisionTree':     'DecisionTree',
+    'SVM':              'SVM',
 }
 DL_REGISTRY = {
     'CNN-1D':      (CNN1DModel,       'cnn_1d'),
