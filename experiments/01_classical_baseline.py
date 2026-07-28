@@ -119,6 +119,15 @@ HYPERPARAM_GRIDS = {
     "LogisticRegression_SMOTE": {
         "model__C": [0.01, 0.1, 1.0],
     },
+    # Only valid for the cuML backend (model step = cuml.svm.SVC directly).
+    # The CPU RFF-approximation fallback nests a DIFFERENT sub-pipeline
+    # (model__rff__gamma, model__sgd__alpha) under entirely different
+    # parameter names, so this grid would raise on that path -- guarded at
+    # the tune_model() call site below, not by omitting it here.
+    "SVM": {
+        "model__C":     [0.1, 1.0, 10.0],
+        "model__gamma": ['scale', 0.01, 0.1],
+    },
 }
 
 
@@ -268,8 +277,26 @@ def build_classical_models(pos_neg_ratio: float = 1.0) -> dict:
     return models
 
 
-def tune_model(name: str, model, X_train, y_train, cv):
-    """Run GridSearchCV if a param grid exists for this model."""
+def tune_model(name: str, model, X_train, y_train, cv, n_jobs=-1,
+               fallback_on_error=False):
+    """Run GridSearchCV if a param grid exists for this model.
+
+    n_jobs=-1 (default) parallelises candidates across CPU processes via
+    joblib, which is safe for CPU estimators (RandomForest, XGBoost, ...).
+    A GPU estimator (cuML's SVC) does not have well-defined behaviour under
+    that -- multiple joblib worker processes each grabbing the same GPU risks
+    CUDA context contention -- so callers tuning a GPU model should pass
+    n_jobs=1 (sequential; still fast since each individual fit is
+    GPU-accelerated).
+
+    fallback_on_error: if GridSearchCV.fit() raises, log a warning and return
+    the untuned model instead of propagating the exception. Default False --
+    the 17 CPU classical models' tuning is proven code, so a failure there
+    should fail the run loudly rather than be silently masked. Set True only
+    for a path that is genuinely untested on this hardware (SVM's cuML
+    GridSearchCV: the original run only ever exercised untuned cross_validate
+    on that estimator, never GridSearchCV's clone/fit cycle), so one model's
+    tuning glitch can't sink an entire multi-hour pipeline run."""
     if name not in HYPERPARAM_GRIDS:
         return model, None
 
@@ -279,11 +306,18 @@ def tune_model(name: str, model, X_train, y_train, cv):
         param_grid=HYPERPARAM_GRIDS[name],
         cv=cv,
         scoring='f1',
-        n_jobs=-1,
+        n_jobs=n_jobs,
         refit=True,
         verbose=0,
     )
-    grid_search.fit(X_train, y_train)
+    try:
+        grid_search.fit(X_train, y_train)
+    except Exception as exc:
+        if not fallback_on_error:
+            raise
+        print(f"  [WARN] GridSearchCV failed for {name} ({exc}); "
+              f"falling back to the untuned config default for this run.")
+        return model, None
     print(f"  ✓  Best params: {grid_search.best_params_}")
     print(f"  ✓  Best CV F1:  {grid_search.best_score_:.4f}")
     return grid_search.best_estimator_, grid_search.best_params_
@@ -304,13 +338,17 @@ def calibration_gap(model, X, y, n_bins: int = 10) -> float:
     """Expected Calibration Error (ECE). Lower is better."""
     if not hasattr(model, 'predict_proba'):
         return float('nan')
+    proba = model.predict_proba(X)[:, 1]
     prob_true, prob_pred = calibration_curve(
-        y, model.predict_proba(X)[:, 1],
-        n_bins=n_bins, strategy='uniform'
+        y, proba, n_bins=n_bins, strategy='uniform'
     )
-    bin_sizes = np.histogram(
-        model.predict_proba(X)[:, 1], bins=n_bins, range=(0, 1)
-    )[0]
+    # calibration_curve() silently drops empty bins from prob_true/prob_pred,
+    # so bin weights must use the same nonzero-bin filter or the two arrays
+    # can end up different lengths (seen in practice whenever a model's
+    # predicted probabilities are concentrated enough to leave some of the
+    # n_bins empty) and raise on the elementwise subtraction below.
+    bin_counts = np.histogram(proba, bins=n_bins, range=(0, 1))[0]
+    bin_sizes = bin_counts[bin_counts > 0]
     weights = bin_sizes / bin_sizes.sum()
     return float(np.sum(weights * np.abs(prob_true - prob_pred)))
 
@@ -485,7 +523,26 @@ def train_baseline_models(
         print(f"  ✓ CV AUC: {cv_auc_mean:.4f} ± {cv_auc_std:.4f}")
 
         # Step 2: Hyperparameter tuning
-        model, best_params = tune_model(name, model, X_train, y_train, cv)
+        # SVM's grid (model__C, model__gamma) only matches the cuML backend's
+        # Pipeline shape (model step = cuml.svm.SVC directly); the CPU
+        # RFF-approximation fallback nests a differently-parameterised
+        # sub-pipeline and would raise on this grid, so skip tuning there
+        # (matches the pre-tuning behaviour, not a regression) rather than
+        # crash the run. SVM also tunes sequentially (n_jobs=1): cuML's SVC
+        # is GPU-accelerated, and joblib's default -1 would spawn multiple
+        # CPU processes each contending for the same GPU.
+        tune_name = name
+        if name == 'SVM' and _CumlSVC is None:
+            tune_name = 'SVM (CPU fallback, tuning grid does not apply)'
+        tune_n_jobs = 1 if name == 'SVM' else -1
+        # cuML's GridSearchCV clone/fit cycle is untested on this hardware
+        # (the original run only ever exercised untuned cross_validate on
+        # this estimator) -- soft-land on the untuned default rather than
+        # crash a multi-hour run over one model's tuning.
+        tune_fallback = name == 'SVM' and _CumlSVC is not None
+        model, best_params = tune_model(tune_name, model, X_train, y_train, cv,
+                                        n_jobs=tune_n_jobs,
+                                        fallback_on_error=tune_fallback)
         if best_params is None:
             model.fit(X_train, y_train)
 

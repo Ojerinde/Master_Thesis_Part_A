@@ -1,12 +1,18 @@
 # Kaggle GPU runbook
 
 Three Kaggle notebooks, all driven by the same corpus dataset
-(`texbat_track_combined.csv`). Two of the three are **twins run head-to-head**
-for a direct A/B on the Transformer architecture (`kaggle_core_pipeline_bn_only.ipynb`
-and `kaggle_core_pipeline_bn_tok.ipynb`) — run both, in parallel on two separate
-Kaggle accounts, and compare the resulting Transformer numbers before deciding
-which goes in the paper. `kaggle_generalization.ipynb` is independent of both
-and can run before, after, or in parallel with either.
+(`texbat_track_combined.csv`):
+
+- `kaggle_core_pipeline.ipynb` — full from-scratch retrain of all 14
+  detectors + the attack suite. Only needed if the corpus or the training
+  code changes; **not** needed just to pick up the SVM tuning fix below.
+- `kaggle_svm_retrain.ipynb` — retrains **only SVM**, reusing the other 13
+  detectors from a prior full run. This is the one to use right now: the
+  original full run's SVM entry never got hyperparameter tuning (a grid was
+  missing for it), and this notebook fixes that without repeating the ~6-7h
+  of already-correct training for the other 13 detectors.
+- `kaggle_generalization.ipynb` — experiment 23, independent of both, can run
+  before/after/in parallel with either.
 
 Repo: **https://github.com/Ojerinde/Master_Thesis_Part_A** (`paper1-experiment`
 branch). Note this repo also holds the manuscript itself, on `main` —
@@ -23,39 +29,45 @@ notebook that needs to clone (per-notebook, not shared). Never paste the
 token directly into a cell — Kaggle notebooks can end up shared or public,
 Secrets cannot.
 
-## `kaggle_core_pipeline_bn_only.ipynb` / `kaggle_core_pipeline_bn_tok.ipynb` — the 14-detector training + attack suite
+## `kaggle_core_pipeline.ipynb` — the 14-detector training + attack suite (full retrain)
 
-Two copies of the same notebook, differing in exactly one environment
-variable (`TRANSFORMER_MODE=bn_only` vs `TRANSFORMER_MODE=bn_tok`, read by
-`models/deep_learning/transformer.py`). Both run `run_pipeline.py` (01, 02,
-then 12/13/25/14/18/17/20/19/22 in that order): trains all 14 detectors (7
-tree/instance/shallow-NN classical + RBF-kernel SVM + 6 deep) from scratch,
-then the full attack suite (decision-based boundary, its bootstrap CI,
-multi-surrogate transfer, FGSM/PGD/DLSA/SNA/TPA) and stats.
+Runs `run_pipeline.py` (01, 02, then 12/13/25/14/18/17/20/19/22 in that
+order): trains all 14 detectors (7 tree/instance/shallow-NN classical + tuned
+RBF-kernel SVM + 6 deep) from scratch, then the full attack suite
+(decision-based boundary, its bootstrap CI, multi-surrogate transfer,
+FGSM/PGD/DLSA/SNA/TPA) and stats.
 
-**Why two variants**: the Transformer collapsed to a constant predictor
-(AUC=0.5) under `MinMaxScaler` — root cause was a missing input-normalization
-layer that every *other* deep architecture in this codebase already had, now
-fixed with `BatchNorm1d` (verified empirically: AUC 0.50 -> 0.78 on real data,
-20-epoch capped test). Separately, the model's own docstring always intended
-"each feature treated as its own token" for genuine cross-feature attention,
-which the code never actually did (all 9 features were collapsed into a
-single token, making self-attention a mathematical no-op). Fixing that
-(`bn_tok`, per-feature tokenization, FT-Transformer-style) is architecturally
-correct but was NOT clearly better empirically in the capped test (`bn_only`
-AUC=0.778/F1=0.622 vs `bn_tok` AUC=0.744/F1=0.605, `bn_tok` also ~3.7x slower
-per epoch) — inconclusive enough that both need a full-scale run before
-deciding which the paper reports.
+**Transformer architecture (settled, not a live A/B anymore):** the
+Transformer collapsed to a constant predictor (AUC=0.5) under `MinMaxScaler`
+— root cause was a missing input-normalization layer that every *other* deep
+architecture in this codebase already had, fixed with `BatchNorm1d`.
+Separately, the model's own docstring always intended "each feature treated
+as its own token" for genuine cross-feature attention, which the code never
+actually did (all 9 features were collapsed into a single token, making
+self-attention a mathematical no-op). Both a per-feature-tokenization variant
+(`bn_tok`, genuine attention) and a single-token variant (`bn_only`,
+attention reduced to a no-op — functionally a residual MLP) were run
+head-to-head at full scale; performance was statistically indistinguishable
+(overlapping 95% fragility CIs), so the choice came down to which one is
+actually doing what "Transformer" means. `bn_tok` (per-feature tokenization)
+is what's now hardcoded in `models/deep_learning/transformer.py` — there is
+no more `TRANSFORMER_MODE` environment variable and no more twin-notebook
+A/B; that decision is final.
 
-Why SVM: the direct comparator paper (An et al. 2025) attacks an RBF-kernel
-SVM specifically, and SVM is independently well-established in the GNSS
-spoofing-detection literature (chen2022svm, Zhu et al. 2022, Aissou et al.
-2022) — a linear kernel already failed here for the same reason
-LogisticRegression did, so this must be RBF to be a meaningful comparator.
-Uses cuML (GPU, exact kernel) if RAPIDS is present in the Kaggle image,
-falling back to a scalable CPU approximation (random Fourier features +
-linear classifier, Rahimi & Recht 2007) otherwise — plain sklearn `SVC`
-would be impractically slow at 144,900 training rows.
+**SVM tuning (fixed):** SVM now gets the same 5-fold-CV GridSearchCV tuning
+(`C`, `gamma`) as every other classical model — the original run trained it
+at its config default only, because `HYPERPARAM_GRIDS` was missing an entry
+for it. Uses cuML (GPU, exact kernel) if RAPIDS is present in the Kaggle
+image, falling back to a scalable CPU approximation (random Fourier features
++ linear classifier, Rahimi & Recht 2007) otherwise — plain sklearn `SVC`
+would be impractically slow at 144,900 training rows, and the CPU fallback's
+differently-shaped Pipeline doesn't support the same tuning grid, so it skips
+tuning and trains at the config default (logged clearly, not silent). SVM is
+independently well-established in the GNSS spoofing-detection literature
+(chen2022svm, Zhu et al. 2022, Aissou et al. 2022) and is the family the
+direct comparator paper (An et al. 2025) attacks — a linear kernel already
+failed here for the same reason LogisticRegression did, so this must be RBF
+to be a meaningful comparator.
 
 This produces the tables Table 1 and the fragility/rank-inversion/trade-off
 figures are built from; run `papers/paper1-satnav/make_figures.py` locally
@@ -64,8 +76,45 @@ call it). Needed whenever the feature space or the training code changes,
 since every downstream script assumes the saved models match the current
 scaler — running attacks against a model trained under a different scaler
 produces silently wrong numbers, not an error. Much lighter than experiment
-23 below (trains each detector once, not per fold), so each fits comfortably
+23 below (trains each detector once, not per fold), so it fits comfortably
 in one Kaggle session.
+
+## `kaggle_svm_retrain.ipynb` — retrain ONLY SVM, reuse the other 13 detectors
+
+For the common case where only SVM needs retraining (e.g. picking up a
+tuning fix or config change) and the other 13 detectors from a prior full run
+are still valid. Runs `run_pipeline_svm_retrain.py`:
+`01b_retrain_svm_only -> 12 -> 13 -> 25 -> 14 -> 18 -> 17 -> 20 -> 19 -> 22`
+— the same downstream stages as the full pipeline, but skipping stage 01's
+GridSearchCV over the other 17 already-correctly-tuned classical variants and
+skipping stage 02's DL training entirely.
+
+**Requires a second Kaggle Dataset input** beyond the corpus CSV: the prior
+run's `results/models/` folder (7 other classical `.joblib` + 6 deep
+learning `.pt` files), so the downstream stages have something to reload
+for the 13 detectors this notebook doesn't retrain. The notebook's Step 1c
+fails loudly, listing exactly what's missing, if this isn't attached — the
+downstream stages themselves only print "MISSING <name>" and silently
+continue otherwise, which is exactly the kind of quietly-incomplete run this
+preflight check exists to prevent (see `run_pipeline_svm_retrain.py`'s
+`preflight()`).
+
+`experiments/01b_retrain_svm_only.py` reuses `01_classical_baseline.py`'s
+training/calibration/evaluation code directly (via `importlib`, since a
+filename starting with a digit can't be `import`-ed normally) rather than
+duplicating it, so there is no risk of the two drifting apart. It reproduces
+the identical deterministic block-temporal train/val/test split (no RNG in
+`data.loader.load_track_splits`, so every independent call/process gets the
+same partition — the same assumption every other stage already relies on),
+trains and tunes only the SVM Pipeline, and overwrites only `SVM.joblib` plus
+merges its row into the two `01`-owned diagnostic CSVs.
+
+One thing this notebook cannot verify: that the models you upload in Step 1c
+were actually trained under the *current* code. A stale `transformer.pt` from
+before the `BatchNorm1d`/tokenizer fix, for instance, will fail to load with
+a clear `RuntimeError` (missing/unexpected state_dict keys) at stage 12 —
+loud and immediate, not silently wrong, but still worth a moment's sanity
+check on which run you're uploading.
 
 ## `kaggle_generalization.ipynb` — experiment 23 (full generalization)
 
@@ -102,45 +151,41 @@ If that changes, state it in Methods.
    - Upload data/processed/texbat_track_combined.csv (38 MB).
    - Name it e.g. "texbat-track-corpus".
 
+2b) Only for `kaggle_svm_retrain.ipynb`: also upload the prior full run's
+   `results/models/` folder as a second Kaggle Dataset (e.g. from your local
+   unzipped `results_minmax_bn_tok/models/`). See that notebook's Step 1c for
+   exactly what's expected. Re-upload a new version of this dataset any time
+   you have a newer "other 13 detectors" baseline to retrain SVM against.
+
 3) Open the notebooks directly on Kaggle (upload the .ipynb file, or paste
    its cells into a new Kaggle notebook) rather than retyping cells by hand —
    all three are maintained files in this repo, so they are always the
-   current version. Run `kaggle_core_pipeline_bn_only.ipynb` and
-   `kaggle_core_pipeline_bn_tok.ipynb` on two *separate* Kaggle accounts
-   simultaneously (each needs its own `GITHUB_TOKEN` secret attached) to stay
-   under any single account's weekly GPU-hour cap.
+   current version.
 
 In the right-hand panel before running any of them: Accelerator = GPU,
-Internet = On, Add Input = the corpus dataset ("Add Input", not "New
-Dataset" — you are attaching the dataset you already uploaded, not creating
-a new one).
+Internet = On, Add Input = the corpus dataset (and, for
+`kaggle_svm_retrain.ipynb`, the prior-run models dataset too) — "Add Input",
+not "New Dataset" — you are attaching datasets you already uploaded, not
+creating new ones.
 
 --------------------------------------------------------------------------------
 ## After the Kaggle runs: path to the final paper
 
 Everything below happens locally, after downloading each notebook's Output.
 
-### 1. Unpack both twin runs and decide bn_only vs bn_tok
-- Download `results_minmax_bn_only.zip` + `pipeline_log_bn_only.txt` from one
-  run, `results_minmax_bn_tok.zip` + `pipeline_log_bn_tok.txt` from the
-  other. Unzip each into a **separate** local folder first (don't extract
-  either straight into `code/gnss_adversarial_research/results/` yet) so
-  they can't clobber each other before you've compared them.
-- Compare the Transformer row in each run's `operating_point_recall95.csv`
-  and `blackbox_boundary_ci.csv` (both notebooks print this row directly at
-  the end of their step 5). Pick whichever is going in the paper — this is a
-  judgment call between architectural correctness (`bn_tok`: genuine
-  cross-feature attention, matches the model's own documented design intent)
-  and empirical performance (whichever scores higher end-to-end; the capped
-  diagnostic favoured `bn_only`, full-scale training may not).
-- Once decided, extract *only that run's* `results_minmax_bn_*.zip` over
-  `code/gnss_adversarial_research/results/` (overwrites the stale pre-rerun
-  `models/` and `tables/`). Keep its `pipeline_log_bn_*.txt` — it is the only
-  record of the Friedman chi-squared statistics and the McNemar
-  significant-pairs count (printed by `19_final_analysis.py` /
-  `22_mcnemar.py`, never written to a CSV).
-- Note the decision and why in the methods text (see step 4 below) —
-  reviewers may ask why one variant was chosen over the other.
+### 1. Unpack the SVM retrain over the prior full run
+- Download `results_svm_retrain.zip` + `pipeline_log_svm_retrain.txt` from
+  `kaggle_svm_retrain.ipynb`'s Output tab.
+- Extract it over `code/gnss_adversarial_research/results/` (overwrites
+  `SVM.joblib` and every table with the tuned-SVM numbers; the other 13
+  detectors' files are already identical since the notebook reused them
+  as-is). Keep `pipeline_log_svm_retrain.txt` — it is the only record of the
+  Friedman chi-squared statistics and the McNemar significant-pairs count
+  (printed by `19_final_analysis.py` / `22_mcnemar.py`, never written to a
+  CSV).
+- If instead you ran a full `kaggle_core_pipeline.ipynb` retrain (corpus or
+  training code changed), extract `results_minmax.zip` the same way and keep
+  `pipeline_log.txt` instead.
 
 ### 2. Run `kaggle_generalization.ipynb` (experiment 23)
 - Independent of step 1; can happen before, after, or already be done.
@@ -158,12 +203,11 @@ Everything below happens locally, after downloading each notebook's Output.
        python make_figures.py
   Regenerates all 11 figures from the fresh tables in
   `code/gnss_adversarial_research/results/tables/`. Visually spot-check the
-  ones most likely to move: fig06 (fragility ranking + CI bars), fig08
-  (generalization heatmap + leave-PRN strip), fig10 (rank inversion), fig11
-  (trade-off parallel-coordinates) — trees (RandomForest/XGBoost/LightGBM/
-  GradientBoosting/DecisionTree) are scale-invariant so their relative
-  ordering is unlikely to move much; KNN, MLP, and all six deep models can
-  shift meaningfully since they were retrained under a different scaler.
+  ones most likely to move: fig06 (fragility ranking + CI bars), fig10 (rank
+  inversion), fig11 (trade-off parallel-coordinates) — SVM is the only
+  detector whose training changed this round, so anything not involving SVM
+  should be pixel-identical to the prior `bn_tok` run; fig08 (generalization
+  heatmap + leave-PRN strip) only moves if step 2 produced new numbers.
 
 ### 4. Recompute every number the manuscript cites
        cd "papers/paper1-satnav"
@@ -175,34 +219,34 @@ Everything below happens locally, after downloading each notebook's Output.
   Cross-check its output against these files, in order of how much text
   depends on retrained models:
   - `main.tex` — abstract (`F1 between 0.74 and 0.84`, the fragility/
-    generalization headline sentences).
+    generalization headline sentences) — recheck the range still holds now
+    that SVM's F1 moved.
   - `sections/introduction.tex` — the four-result summary paragraph, mirrors
     the abstract.
   - `sections/results.tex` — almost every number in this file: Table 1
     (`tab:oppoint`), the fragility paragraph (medians + CIs + the tree-cluster
-    overlap claim), the domain-ASR paragraph, the generalization paragraph
-    (cross-scenario means/sd, leave-PRN medians), the McNemar/Friedman
-    paragraph (from the chosen run's `pipeline_log_bn_*.txt`, not
-    `verify_numbers.py`).
+    overlap claim — SVM was already the weakest detector pre-tuning, recheck
+    it doesn't move enough to change the ranking claims), the domain-ASR
+    paragraph, the generalization paragraph (cross-scenario means/sd,
+    leave-PRN medians), the McNemar/Friedman paragraph (from
+    `pipeline_log_svm_retrain.txt`, not `verify_numbers.py`).
   - `sections/discussion.tex` — the FAR range in the operational-synthesis
-    paragraph (`0.30 to 0.69`, from Table 1).
+    paragraph (`0.30 to 0.69`, from Table 1) — SVM had the worst FAR
+    pre-tuning (~0.94), recheck whether tuning moved the range's endpoint.
   - `sections/threat_model.tex` — the epsilon-to-dB calibration paragraph
     cites the most/least fragile detector's specific values (currently "near
     0.01 ... falls to ... 0.5 dB" / "about 0.10, roughly 6 dB"); re-check
-    these are still GradientBoosting/KNN and the dB figures still hold once
-    the fragility ranking is refreshed.
-  - `sections/methods.tex` — **every "thirteen detectors" becomes "fourteen
-    detectors"** (abstract, intro contributions, methods, every figure/table
-    caption that states the count) now that RBF-kernel SVM is in the roster.
-    The linear-classifier exclusion sentence is currently qualitative on
-    purpose ("far below every model", no number given) because this exact
-    rerun was expected to change it — fill in the real LogisticRegression F1
-    from `results/tables/baseline_results.csv` now that it is fresh. Also add
-    a sentence on which Transformer variant was used and why (step 1 above) —
-    if `bn_tok`, note the per-feature tokenization/genuine-attention design;
-    if `bn_only`, be honest that self-attention reduces to a no-op at
-    seq_len=1 and the model is functionally a residual MLP, since a careful
-    reader could reconstruct this from the code either way.
+    these are still GradientBoosting/KNN once the fragility ranking is
+    refreshed (SVM was not the extreme on either end pre-tuning, but confirm).
+  - `sections/methods.tex` — confirm "fourteen detectors" (not thirteen) is
+    used consistently (abstract, intro contributions, methods, every
+    figure/table caption that states the count) now that RBF-kernel SVM is
+    in the roster. Fill in the real LogisticRegression F1 from
+    `results/tables/baseline_results.csv` if the linear-classifier exclusion
+    sentence is still qualitative-only. State the Transformer architecture
+    (per-feature tokenization, genuine attention — see the settled-decision
+    note above) and that SVM was tuned via GridSearchCV like every other
+    classical model.
 
 ### 5. Rebuild and verify the PDF
        pdflatex -interaction=nonstopmode main && bibtex main && pdflatex -interaction=nonstopmode main && pdflatex -interaction=nonstopmode main
@@ -217,7 +261,7 @@ Everything below happens locally, after downloading each notebook's Output.
   worst-case recall; the tree/nearest-neighbour "robustness" under transfer
   is still gradient masking (i.e. still fragile under the boundary attack);
   cross-scenario generalization still collapses on the unseen overpowered
-  scenario. If a retrained model's ranking moved enough to change which
+  scenario. If SVM's tuning moved its ranking enough to change which
   detector is "most fragile" or "the robust outlier", the prose naming that
   detector needs updating too, not just the number next to it.
 

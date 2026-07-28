@@ -128,8 +128,13 @@ def calculate_ece(model, X, y, n_bins=10):
     try:
         prob_true, prob_pred = calibration_curve(
             y, proba, n_bins=n_bins, strategy='uniform')
-        bin_sizes = np.histogram(proba, bins=n_bins, range=(0, 1))[0]
-        weights = bin_sizes[:len(prob_true)].astype(float)
+        # calibration_curve() silently drops empty bins from prob_true/
+        # prob_pred, so bin weights must use the same nonzero-bin filter.
+        # bin_sizes[:len(prob_true)] (the previous approach) assumes any
+        # dropped bins are the trailing ones, which silently misaligns
+        # weights against the wrong bins whenever an empty bin isn't last.
+        bin_counts = np.histogram(proba, bins=n_bins, range=(0, 1))[0]
+        weights = bin_counts[bin_counts > 0].astype(float)
         total = weights.sum()
         return float(np.sum((weights/total)*np.abs(prob_true-prob_pred))) if total > 0 else float('nan')
     except Exception:
