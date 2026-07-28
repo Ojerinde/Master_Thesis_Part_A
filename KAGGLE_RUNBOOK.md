@@ -1,11 +1,12 @@
 # Kaggle GPU runbook
 
-Two independent Kaggle notebooks, both driven by the same corpus dataset
-(`texbat_track_combined.csv`). Run `kaggle_core_pipeline.ipynb` first if the
-locally saved models are stale relative to `data/loader.py`'s scaler (check
-`data/processed/scaler.pkl`'s timestamp against the model files under
-`results/models/`); `kaggle_generalization.ipynb` is independent and can run
-before, after, or in parallel.
+Three Kaggle notebooks, all driven by the same corpus dataset
+(`texbat_track_combined.csv`). Two of the three are **twins run head-to-head**
+for a direct A/B on the Transformer architecture (`kaggle_core_pipeline_bn_only.ipynb`
+and `kaggle_core_pipeline_bn_tok.ipynb`) — run both, in parallel on two separate
+Kaggle accounts, and compare the resulting Transformer numbers before deciding
+which goes in the paper. `kaggle_generalization.ipynb` is independent of both
+and can run before, after, or in parallel with either.
 
 Repo: **https://github.com/Ojerinde/Master_Thesis_Part_A** (`paper1-experiment`
 branch). Note this repo also holds the manuscript itself, on `main` —
@@ -13,28 +14,58 @@ branch). Note this repo also holds the manuscript itself, on `main` —
 `main`. The old `Master_Research` repo referenced in earlier versions of this
 file was deleted; this is the current one.
 
-**This repo is private.** Both notebooks' clone cell reads a `GITHUB_TOKEN`
+**This repo is private.** All three notebooks' clone cell reads a `GITHUB_TOKEN`
 from Kaggle Secrets (Add-ons -> Secrets in the notebook's right panel) rather
 than an anonymous clone, which fails with `could not read Username`. Create a
 fine-grained GitHub PAT scoped to only this repo with `Contents: Read-only`,
 add it as a Kaggle Secret named `GITHUB_TOKEN`, and attach it to each
-notebook that needs to clone. Never paste the token directly into a cell —
-Kaggle notebooks can end up shared or public, Secrets cannot.
+notebook that needs to clone (per-notebook, not shared). Never paste the
+token directly into a cell — Kaggle notebooks can end up shared or public,
+Secrets cannot.
 
-## `kaggle_core_pipeline.ipynb` — the 13-detector training + attack suite
+## `kaggle_core_pipeline_bn_only.ipynb` / `kaggle_core_pipeline_bn_tok.ipynb` — the 14-detector training + attack suite
 
-Runs `run_pipeline.py` (01, 02, then 12/13/25/14/18/17/20/19/22 in that
-order): trains all 13 detectors from scratch, then the full attack suite
-(decision-based boundary, its bootstrap CI, multi-surrogate transfer,
-FGSM/PGD/DLSA/SNA/TPA) and stats. This is what produces the tables Table 1 and
-the fragility/rank-inversion/trade-off figures are built from; run
-`papers/paper1-satnav/make_figures.py` locally afterward to regenerate the
-figures themselves (`run_pipeline.py` does not call it). Needed whenever the
-feature space or the training code changes, since every downstream script
-assumes the saved models match the current scaler — running attacks against a
-model trained under a different scaler produces silently wrong numbers, not
-an error. Much lighter than experiment 23 below (trains each detector once,
-not per fold), so it fits comfortably in one Kaggle session.
+Two copies of the same notebook, differing in exactly one environment
+variable (`TRANSFORMER_MODE=bn_only` vs `TRANSFORMER_MODE=bn_tok`, read by
+`models/deep_learning/transformer.py`). Both run `run_pipeline.py` (01, 02,
+then 12/13/25/14/18/17/20/19/22 in that order): trains all 14 detectors (7
+tree/instance/shallow-NN classical + RBF-kernel SVM + 6 deep) from scratch,
+then the full attack suite (decision-based boundary, its bootstrap CI,
+multi-surrogate transfer, FGSM/PGD/DLSA/SNA/TPA) and stats.
+
+**Why two variants**: the Transformer collapsed to a constant predictor
+(AUC=0.5) under `MinMaxScaler` — root cause was a missing input-normalization
+layer that every *other* deep architecture in this codebase already had, now
+fixed with `BatchNorm1d` (verified empirically: AUC 0.50 -> 0.78 on real data,
+20-epoch capped test). Separately, the model's own docstring always intended
+"each feature treated as its own token" for genuine cross-feature attention,
+which the code never actually did (all 9 features were collapsed into a
+single token, making self-attention a mathematical no-op). Fixing that
+(`bn_tok`, per-feature tokenization, FT-Transformer-style) is architecturally
+correct but was NOT clearly better empirically in the capped test (`bn_only`
+AUC=0.778/F1=0.622 vs `bn_tok` AUC=0.744/F1=0.605, `bn_tok` also ~3.7x slower
+per epoch) — inconclusive enough that both need a full-scale run before
+deciding which the paper reports.
+
+Why SVM: the direct comparator paper (An et al. 2025) attacks an RBF-kernel
+SVM specifically, and SVM is independently well-established in the GNSS
+spoofing-detection literature (chen2022svm, Zhu et al. 2022, Aissou et al.
+2022) — a linear kernel already failed here for the same reason
+LogisticRegression did, so this must be RBF to be a meaningful comparator.
+Uses cuML (GPU, exact kernel) if RAPIDS is present in the Kaggle image,
+falling back to a scalable CPU approximation (random Fourier features +
+linear classifier, Rahimi & Recht 2007) otherwise — plain sklearn `SVC`
+would be impractically slow at 144,900 training rows.
+
+This produces the tables Table 1 and the fragility/rank-inversion/trade-off
+figures are built from; run `papers/paper1-satnav/make_figures.py` locally
+afterward to regenerate the figures themselves (`run_pipeline.py` does not
+call it). Needed whenever the feature space or the training code changes,
+since every downstream script assumes the saved models match the current
+scaler — running attacks against a model trained under a different scaler
+produces silently wrong numbers, not an error. Much lighter than experiment
+23 below (trains each detector once, not per fold), so each fits comfortably
+in one Kaggle session.
 
 ## `kaggle_generalization.ipynb` — experiment 23 (full generalization)
 
@@ -71,28 +102,45 @@ If that changes, state it in Methods.
    - Upload data/processed/texbat_track_combined.csv (38 MB).
    - Name it e.g. "texbat-track-corpus".
 
-3) Open `kaggle_core_pipeline.ipynb` or `kaggle_generalization.ipynb` directly
-   on Kaggle (upload the .ipynb file, or paste its cells into a new Kaggle
-   notebook) rather than retyping cells by hand — both are maintained files
-   in this repo, so they are always the current version.
+3) Open the notebooks directly on Kaggle (upload the .ipynb file, or paste
+   its cells into a new Kaggle notebook) rather than retyping cells by hand —
+   all three are maintained files in this repo, so they are always the
+   current version. Run `kaggle_core_pipeline_bn_only.ipynb` and
+   `kaggle_core_pipeline_bn_tok.ipynb` on two *separate* Kaggle accounts
+   simultaneously (each needs its own `GITHUB_TOKEN` secret attached) to stay
+   under any single account's weekly GPU-hour cap.
 
-In the right-hand panel before running either: Accelerator = GPU, Internet =
-On, Add Input = the corpus dataset ("Add Input", not "New Dataset" — you are
-attaching the dataset you already uploaded, not creating a new one).
+In the right-hand panel before running any of them: Accelerator = GPU,
+Internet = On, Add Input = the corpus dataset ("Add Input", not "New
+Dataset" — you are attaching the dataset you already uploaded, not creating
+a new one).
 
 --------------------------------------------------------------------------------
 ## After the Kaggle runs: path to the final paper
 
 Everything below happens locally, after downloading each notebook's Output.
 
-### 1. Unpack `kaggle_core_pipeline.ipynb`'s output
-- Download `results_minmax.zip` and `pipeline_log.txt` from the committed
-  version's Output tab.
-- Unzip `results_minmax.zip` over `code/gnss_adversarial_research/results/`
-  (overwrites the stale pre-min-max `models/` and `tables/`).
-- Keep `pipeline_log.txt` — it is the only record of the Friedman
-  chi-squared statistics and the McNemar significant-pairs count (printed by
-  `19_final_analysis.py` / `22_mcnemar.py`, never written to a CSV).
+### 1. Unpack both twin runs and decide bn_only vs bn_tok
+- Download `results_minmax_bn_only.zip` + `pipeline_log_bn_only.txt` from one
+  run, `results_minmax_bn_tok.zip` + `pipeline_log_bn_tok.txt` from the
+  other. Unzip each into a **separate** local folder first (don't extract
+  either straight into `code/gnss_adversarial_research/results/` yet) so
+  they can't clobber each other before you've compared them.
+- Compare the Transformer row in each run's `operating_point_recall95.csv`
+  and `blackbox_boundary_ci.csv` (both notebooks print this row directly at
+  the end of their step 5). Pick whichever is going in the paper — this is a
+  judgment call between architectural correctness (`bn_tok`: genuine
+  cross-feature attention, matches the model's own documented design intent)
+  and empirical performance (whichever scores higher end-to-end; the capped
+  diagnostic favoured `bn_only`, full-scale training may not).
+- Once decided, extract *only that run's* `results_minmax_bn_*.zip` over
+  `code/gnss_adversarial_research/results/` (overwrites the stale pre-rerun
+  `models/` and `tables/`). Keep its `pipeline_log_bn_*.txt` — it is the only
+  record of the Friedman chi-squared statistics and the McNemar
+  significant-pairs count (printed by `19_final_analysis.py` /
+  `22_mcnemar.py`, never written to a CSV).
+- Note the decision and why in the methods text (see step 4 below) —
+  reviewers may ask why one variant was chosen over the other.
 
 ### 2. Run `kaggle_generalization.ipynb` (experiment 23)
 - Independent of step 1; can happen before, after, or already be done.
@@ -134,7 +182,8 @@ Everything below happens locally, after downloading each notebook's Output.
     (`tab:oppoint`), the fragility paragraph (medians + CIs + the tree-cluster
     overlap claim), the domain-ASR paragraph, the generalization paragraph
     (cross-scenario means/sd, leave-PRN medians), the McNemar/Friedman
-    paragraph (from `pipeline_log.txt`, not `verify_numbers.py`).
+    paragraph (from the chosen run's `pipeline_log_bn_*.txt`, not
+    `verify_numbers.py`).
   - `sections/discussion.tex` — the FAR range in the operational-synthesis
     paragraph (`0.30 to 0.69`, from Table 1).
   - `sections/threat_model.tex` — the epsilon-to-dB calibration paragraph
@@ -142,10 +191,18 @@ Everything below happens locally, after downloading each notebook's Output.
     0.01 ... falls to ... 0.5 dB" / "about 0.10, roughly 6 dB"); re-check
     these are still GradientBoosting/KNN and the dB figures still hold once
     the fragility ranking is refreshed.
-  - `sections/methods.tex` — the linear-classifier exclusion sentence is
-    currently qualitative on purpose ("far below every model", no number
-    given) because this exact rerun was expected to change it. Fill in the
-    real F1 from `results/tables/baseline_results.csv` now that it is fresh.
+  - `sections/methods.tex` — **every "thirteen detectors" becomes "fourteen
+    detectors"** (abstract, intro contributions, methods, every figure/table
+    caption that states the count) now that RBF-kernel SVM is in the roster.
+    The linear-classifier exclusion sentence is currently qualitative on
+    purpose ("far below every model", no number given) because this exact
+    rerun was expected to change it — fill in the real LogisticRegression F1
+    from `results/tables/baseline_results.csv` now that it is fresh. Also add
+    a sentence on which Transformer variant was used and why (step 1 above) —
+    if `bn_tok`, note the per-feature tokenization/genuine-attention design;
+    if `bn_only`, be honest that self-attention reduces to a no-op at
+    seq_len=1 and the model is functionally a residual MLP, since a careful
+    reader could reconstruct this from the code either way.
 
 ### 5. Rebuild and verify the PDF
        pdflatex -interaction=nonstopmode main && bibtex main && pdflatex -interaction=nonstopmode main && pdflatex -interaction=nonstopmode main

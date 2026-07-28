@@ -6,20 +6,31 @@ Multi-Head Self-Attention Transformer for GNSS spoofing detection.
 Design Rationale:
 - Self-attention captures global dependencies across all GNSS features
   simultaneously, unlike RNNs which process sequentially
-- Each feature is treated as its own token (FT-Transformer-style per-feature
-  tokenizer: Gorishniy et al., "Revisiting Deep Learning Models for Tabular
-  Data," NeurIPS 2021); attention learns which feature combinations are
-  discriminative for spoofing detection. There is no temporal sequence to
-  tokenize across (each sample is one independent epoch, same as every other
-  model in this file), so per-feature tokenization is what gives attention a
-  genuine sequence (seq_len = 9) to operate on at all.
-- LayerNorm + residual connections enable deep, stable training
-- BatchNorm1d on the raw input, before tokenization: nn.Linear-style init
+- BatchNorm1d on the raw input, before embedding: nn.Linear-style init
   assumes roughly unit-variance input; MinMaxScaler output (variance << 1)
   violates that and was the direct, verified cause of a collapse to a
   constant predictor (AUC=0.5, identical output regardless of input) on the
   full corpus. BatchNorm1d restores that assumption regardless of whatever
-  scaler sits upstream.
+  scaler sits upstream. Applies to both TRANSFORMER_MODE variants below.
+- LayerNorm + residual connections enable deep, stable training
+
+TRANSFORMER_MODE environment variable selects between two variants under
+head-to-head comparison for the paper (both fix the collapse above; this
+switch is only about whether attention does genuine cross-feature work):
+  'bn_tok'  (default) -- each feature is its own token (FT-Transformer-style
+            per-feature tokenizer: Gorishniy et al., "Revisiting Deep
+            Learning Models for Tabular Data," NeurIPS 2021); attention
+            learns which feature combinations are discriminative. There is
+            no temporal sequence to tokenize across (each sample is one
+            independent epoch, same as every other model in this file), so
+            this is what gives attention a genuine sequence (seq_len = 9) to
+            operate on at all.
+  'bn_only' -- all 9 features collapsed into a single token before
+            embedding (seq_len = 1); self-attention over one token is
+            mathematically a no-op (softmax over one score is always 1.0),
+            so this variant works as a deep residual MLP with LayerNorm, not
+            genuine attention. Kept as a real experimental comparator, not a
+            fallback: empirically close to bn_tok and faster to train.
 
 Reference:
 - Vaswani et al. (2017): Attention Is All You Need
@@ -27,12 +38,17 @@ Reference:
   Models for Tabular Data (FT-Transformer), NeurIPS 2021, arXiv:2106.11959
 """
 
+import os
 from models.deep_learning.base_model import BaseDeepLearningModel
 from config.model_configs import get_config
 import numpy as np
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, TensorDataset
+
+TRANSFORMER_MODE = os.environ.get('TRANSFORMER_MODE', 'bn_tok')
+assert TRANSFORMER_MODE in ('bn_tok', 'bn_only'), \
+    f"TRANSFORMER_MODE must be 'bn_tok' or 'bn_only', got {TRANSFORMER_MODE!r}"
 
 
 class _FeatureTokenizer(nn.Module):
@@ -92,9 +108,12 @@ class _TransformerNet(nn.Module):
         # embedding projection of the input scale its init expects and was the
         # direct cause of a collapse to a constant predictor (AUC=0.5) on the
         # full corpus. BatchNorm1d restores that assumption regardless of
-        # whatever scaler sits upstream.
+        # whatever scaler sits upstream. Applies in both TRANSFORMER_MODE cases.
         self.input_norm = nn.BatchNorm1d(input_dim)
-        self.tokenizer = _FeatureTokenizer(input_dim, embed_dim)
+        if TRANSFORMER_MODE == 'bn_tok':
+            self.tokenizer = _FeatureTokenizer(input_dim, embed_dim)
+        else:
+            self.embedding = nn.Linear(input_dim, embed_dim)
 
         self.blocks = nn.ModuleList([
             _TransformerBlock(embed_dim, num_heads, ff_dim, dropout_rate)
@@ -113,10 +132,14 @@ class _TransformerNet(nn.Module):
     def forward(self, x):
         # x: (batch, features)
         x = self.input_norm(x)
-        x = self.tokenizer(x)              # (batch, features, embed_dim): seq_len = features
+        if TRANSFORMER_MODE == 'bn_tok':
+            x = self.tokenizer(x)          # (batch, features, embed_dim): seq_len = features
+        else:
+            x = x.unsqueeze(1)             # (batch, 1, features): seq_len = 1
+            x = self.embedding(x)          # (batch, 1, embed_dim)
         for block in self.blocks:
             x = block(x)
-        x = x.mean(dim=1)                  # average pool over the per-feature tokens
+        x = x.mean(dim=1)                  # average pool over the token sequence
         return self.mlp(x).squeeze(-1)
 
 
