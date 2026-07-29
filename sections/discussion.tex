@@ -103,8 +103,12 @@ decision-based attack at a fixed, physically small budget $\varepsilon=0.10$ (ab
 of $C/N_0$; large marker), with the false-alarm rate held at its clean value because the
 evasion attack targets spoofed epochs. Missed detection is the integrity risk that
 precedes hazardously misleading information; the false-alarm rate is the continuity risk.
-Every detector leaves the low-missed-detection band under the attack, and none remains in
-a region an integrity monitor could use.}
+Higher is worse on both axes, the reverse of clean $F_1$ in
+Figure~\ref{fig:detection}: the gradient-boosting model, second best on clean detection,
+reaches the highest missed detection under attack, and the support-vector machine the
+lowest, so the ordering under attack does not follow clean performance
+(Figure~\ref{fig:inversion}). Every detector leaves the low-missed-detection band under
+the attack, and none remains in a region an integrity monitor could use.}
 \label{fig:integrity}
 \end{figure}
 
