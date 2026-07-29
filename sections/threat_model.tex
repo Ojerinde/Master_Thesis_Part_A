@@ -36,10 +36,11 @@ the standardised space the fixed gradient budget of 0.10 corresponds to about 0.
 the same observable or about 200 Hz of Doppler. The perturbations that defeat the detectors
 are therefore physically small changes a spoofer can impose rather than abstract normalised
 numbers. Every adversarial
-example is projected onto the physically realizable set by the signal-validity enforcer
-of Section~\ref{sec:method}, including the coupling between reported signal quality and
-correlator power, so no reported attack corresponds to a signal the spoofer could not
-transmit.
+example is projected by the signal-validity enforcer of Section~\ref{sec:enforcer} onto
+the band set by the coupling between reported signal quality and correlator power, so no
+reported attack violates that amplitude-power relation. This coupling is a necessary
+condition for realizability rather than the full set; Section~\ref{sec:enforcer} states
+which physical constraints the enforcer does and does not model.
 
 The attacker's access to the detector depends on the detector. For the differentiable
 deep detectors the attacker has white-box gradient access. This is a deliberate

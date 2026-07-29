@@ -7,8 +7,10 @@ its architecture does not decide the question. On clean data no family dominates
 under a matched attack every family is defeated. Architecture choice buys a trade-off
 between detection utility and robustness, not a security guarantee. The trade-off is
 direct: Figure~\ref{fig:inversion} ranks the detectors by clean $F_1$ and by the
-perturbation needed to evade them, and the two orderings are close to reversed, so the
-detector that is strongest on clean data is among the weakest under attack. The
+perturbation needed to evade them, and the two orderings are close to reversed
+(Spearman $\rho=-0.82$, $p<0.001$, across the fourteen detectors; $\rho=-0.78$
+excluding the support-vector-machine outlier), so the detector that is strongest on
+clean data is among the weakest under attack. The
 support-vector machine is the clearest instance, since it resists the
 decision-based attack more than any other detector yet has the weakest clean $F_1$ and
 the highest false-alarm rate, so its robustness is bought at a utility cost that a

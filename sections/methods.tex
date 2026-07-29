@@ -136,25 +136,39 @@ q_{1} \le (C/N_0) - \big(a + b\log_{10}(I_P^2+Q_P^2)\big) \le q_{99},
 \end{equation}
 where $q_{1}$ and $q_{99}$ are the first and ninety-ninth percentiles of the training
 residuals. An attacker therefore cannot raise the reported signal quality without also
-supplying the correlator power that would produce it. This encodes the physical relation between the spoofer's amplitude
-control and the reported observables and is what separates a realizable attack from an
-arbitrary feature perturbation. Figure~\ref{fig:realizability} illustrates the effect.
-An attack that raises the reported $C/N_0$ without supplying the correlator power that
-would produce it leaves the physically attainable band, and the enforcer projects it
-back onto that band, so the enforcer is the mechanism by which every attack in this
-study is kept transmittable. The enforcer acts per epoch, so it guarantees that each
-epoch is individually realizable but does not constrain the epoch-to-epoch continuity of
-the amplitude, phase and code trajectories; a temporal-smoothness constraint on that
-trajectory is a natural extension left to future work.
+supplying the correlator power that would produce it. This encodes the dominant physical
+relation between the spoofer's amplitude control and the reported observables and is
+what separates a constrained attack from an arbitrary feature perturbation.
+Figure~\ref{fig:realizability} illustrates the effect. An attack that raises the reported
+$C/N_0$ without supplying the correlator power that would produce it leaves the attainable
+band, and the enforcer projects it back onto that band.
+
+The enforcer is a necessary, not a sufficient, condition for full physical realizability,
+and its scope is a deliberate boundary of the threat model. It enforces the per-epoch
+amplitude-to-power coupling and the conservative per-observable bounds; it does not model
+carrier-phase or code-phase continuity, Doppler and clock dynamics, tracking-loop (PLL and
+DLL) bandwidth and transient behaviour, automatic-gain-control response, or satellite
+geometry, and, acting per epoch, it does not constrain the epoch-to-epoch smoothness of the
+amplitude, phase and code trajectories. Each of these is an additional constraint a
+transmitted signal must also satisfy, so an attack this study counts as successful under
+the amplitude-power constraint could still be rejected by a temporally aware receiver that
+checks carrier-tracking-loop consistency across epochs. The reported attacks are therefore
+physically constrained on the coupling most relevant to a single-epoch feature-space
+attack rather than certified realizable in full; enforcing the remaining constraints, in
+particular a temporal-smoothness constraint on the amplitude, phase and code trajectories,
+is a natural extension left to future work and would only tighten, not loosen, the
+attacker's feasible set.
 
 \begin{figure}[tb]
 \centering
 \includegraphics[width=\linewidth]{figures/fig09_realizability.pdf}
 \caption{The signal-validity enforcer on the $C/N_0$ to correlator-power manifold.
-Receiver observations lie in the physically realizable band. An adversarial attack that
+Receiver observations lie in the empirical band. An adversarial attack that
 raises the reported $C/N_0$ without supplying the correlator power leaves the band
 (unconstrained), and the enforcer projects it back onto the band, so the reported
-attack corresponds to a transmittable signal.}
+attack respects the amplitude-power coupling a feature-space attack would otherwise
+violate (one necessary condition for realizability; the full scope is stated in
+Section~\ref{sec:enforcer}).}
 \label{fig:realizability}
 \end{figure}
 
@@ -169,6 +183,21 @@ across satellites. Every fold sets the common operating point on its own validat
 block and retrains each detector on its own training block, so no information from the
 held-out fold enters training.
 
+Each deep detector is trained over three random seeds; the standard deviation of clean
+test $F_1$ across seeds is at most 0.024 and of AUC at most 0.019, so the deep-model
+results are stable to retraining. The decision-based fragility is measured on one
+representative trained model per architecture, since the boundary attack is run per
+sample and per detector; the effect sizes that carry the fragility ranking span roughly
+sixfold (Section~\ref{sec:res_adv}), well beyond the across-seed clean variation, so the
+ordering is unlikely to be an artifact of a single training run, though a full
+seed-by-attack sweep is left to future work.
+
+The decision-based attack is evaluated on 500 correctly detected spoofed test epochs per
+detector, drawn as a uniform random sample from the roughly nineteen thousand such epochs
+in the test partition, so the sample is representative of the test scenario mix rather
+than stratified by scenario; a fixed sample size keeps the per-detector attack cost
+comparable, and per-scenario fragility is not separately resolved at this size.
+
 The effect of the fixed-budget attacks is summarised by the attack success rate, the
 fraction of initially correct detections that an attack flips at $\eta^\star$.
 Uncertainty on the clean $F_1$ is reported as a 10{,}000-sample bootstrap confidence
@@ -177,4 +206,7 @@ with a 10{,}000-sample bootstrap interval over the attacked samples. Pairwise de
 differences, computed on the clean test-set decisions, are tested with the mid-$p$
 McNemar test \citep{dietterich1998approximate} under Holm correction across all pairs,
 and heterogeneity across attacks is tested with the Friedman test
-\citep{demsar2006statistical}.
+\citep{demsar2006statistical}. Reported timings are per-sample inference and
+attack-generation latency; training cost ranged from seconds for the tree detectors to
+tens of minutes for the deep detectors and the kernel machine on the run hardware, and
+memory footprint was not profiled.

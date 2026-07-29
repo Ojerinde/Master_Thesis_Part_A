@@ -113,10 +113,11 @@ The contributions of this paper are the following.
   \item A reproducible signal-level corpus of nine physically independent receiver
   observables, generated from TEXBAT by an open software-defined receiver, with
   within-recording labelling that removes the recording-identity confound.
-  \item A signal-validity enforcer that projects adversarial examples onto the
-  physically realizable set and preserves the coupling between reported signal quality
-  and correlator power, so that every reported attack corresponds to a transmittable
-  signal.
+  \item A signal-validity enforcer that projects adversarial examples onto a band that
+  preserves the coupling between reported signal quality and correlator power, a
+  necessary realizability condition that rules out the grossly unrealizable
+  feature-space perturbations an unconstrained attack would permit; the constraints it
+  does not model are stated as an explicit threat-model boundary.
   \item Evidence across fourteen detectors that no architecture is robust under a
   matched attack, that classical robustness under transfer is gradient masking, and
   that cross-scenario detection collapses on an unseen attack. Because this holds for

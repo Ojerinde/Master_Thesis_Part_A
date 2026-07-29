@@ -5,8 +5,9 @@ We reported a model-fair adversarial evaluation of fourteen machine-learning GNS
 spoofing detectors on receiver observables produced by an open software-defined
 receiver from the Texas Spoofing Test Battery. Every detector was placed at a common
 operating point and attacked by one shared suite that included a gradient-free
-decision-based attack, and every adversarial example was projected onto the physically
-realizable set so that no reported attack corresponds to an untransmittable signal.
+decision-based attack, and every adversarial example was projected onto a band that
+preserves the amplitude-power coupling, a necessary realizability condition that no
+reported attack violates.
 
 Four results follow. On clean data no architecture family dominates, with $F_1$ between
 0.68 and 0.83. Under the decision-based attack every detector is driven to a worst-case

@@ -58,9 +58,10 @@ receiver observables produced by an open software-defined receiver from the stat
 family of the Texas Spoofing Test Battery, a stationary-receiver setting. Every detector is placed at a common operating point of clean
 recall 0.95 and is attacked by one shared suite that includes white-box gradient
 attacks, multi-surrogate transfer, three GNSS domain manipulations and a
-gradient-free decision-based attack. Each adversarial example is projected onto the
-physically realizable set so that no reported attack corresponds to a signal the
-spoofer could not transmit. On clean data no family dominates, with $F_1$ between
+gradient-free decision-based attack. Each adversarial example is projected by a
+signal-validity enforcer onto the band set by the coupling between reported signal
+quality and correlator power, a necessary condition for realizability that no reported
+attack violates. On clean data no family dominates, with $F_1$ between
 0.68 and 0.83. Under the decision-based attack every detector, differentiable or not,
 is driven to a worst-case spoof recall near zero. The boosted-tree detectors require
 the smallest perturbation to evade, led by a model that is second only to the best
