@@ -6,21 +6,39 @@ claiming a certificate. This is the EMPIRICAL baseline (adversarial training on 
 deep detectors), NOT the certified randomized-smoothing / GNSS-Shield defense, which
 is Paper 2 and is out of scope here.
 
-Scheme: PGD adversarial training (Madry et al. 2018) done to current best practice.
-For each deep model we train (1) an undefended baseline by standard training and
-(2) a defended model by min-max PGD-AT: adversarial examples are generated ON THE FLY
-each mini-batch against the CURRENT weights (inner maximisation) and the network is
-trained to classify them correctly (outer minimisation). Crucially, the checkpoint is
-selected by EARLY STOPPING on a ROBUST validation metric (spoof recall under PGD on the
-validation block at the recall=0.95 operating point), which is the established fix for
-robust overfitting (Rice et al. 2020) - selecting on clean loss is exactly the mistake
-that makes AT look ineffective. We then evaluate BOTH variants at the common recall=0.95
-operating point under clean, FGSM and PGD. FGSM/PGD at eval are regenerated against each
-variant, so the attack on the defended model is ADAPTIVE (white-box against the defended
-weights), the correct test of whether the defense holds (Athalye 2018; Carlini 2019).
+Scheme: TRADES adversarial training (Zhang et al. 2019, ICML) done to current best
+practice. For each deep model we train (1) an undefended baseline by standard
+training and (2) a defended model by min-max TRADES: adversarial examples are
+generated ON THE FLY each mini-batch against the CURRENT weights (inner
+maximisation of the KL divergence between the adversarial and the model's own
+clean prediction) and the network is trained to minimise natural loss plus that
+same KL term (outer minimisation). Plain Madry-style PGD-AT (loss = BCE(adversarial
+prediction, true label), nothing anchoring the model to clean-data behaviour) was
+tried first and collapsed every one of the six deep detectors to a trivial
+"always spoof" predictor -- see adv_train_model's docstring for the full
+diagnostic history (two other fixes tried and ruled out first) and why TRADES is
+the literature-standard remedy for this specific failure mode. Crucially, the
+checkpoint is selected by EARLY STOPPING on a ROBUST validation metric (BALANCED
+accuracy, mean of TPR and TNR, under PGD on the validation block), which is the
+established fix for robust overfitting (Rice et al. 2020) - selecting on clean
+loss, or on recall alone (gameable by an all-spoof collapse), is exactly the
+mistake that makes AT look ineffective or look falsely successful. We then
+evaluate BOTH variants at the common recall=0.95 operating point under clean,
+FGSM and PGD. FGSM/PGD at eval are STANDARD (true-label) attacks, regenerated
+against each variant so the attack on the defended model is ADAPTIVE (white-box
+against the defended weights) -- TRADES changes the TRAINING objective only;
+evaluation always uses the attacker-realistic, true-label attack, matching how
+TRADES itself is evaluated in the literature (Athalye 2018; Carlini 2019).
 
 Design choices (reviewer-facing, per the AT literature):
-  - inner PGD: random start, L-inf budget AUG_EPS, AT_PGD_STEPS steps (eval uses 40).
+  - loss: TRADES (Zhang et al. 2019) natural + beta*KL, not plain Madry-style AT
+    -- see adv_train_model's docstring for the diagnostic history and the exact
+    binary-classification adaptation of the (multi-class-specified) KL term.
+  - BatchNorm mode: eval during the inner loop (adversarial-example crafting),
+    train only for the weight-update step (Pang et al. 2021, "Bag of Tricks for
+    Adversarial Training") -- kept even though it did not by itself resolve the
+    collapse; nothing found suggests reverting it.
+  - inner loop: random start, L-inf budget AUG_EPS, AT_PGD_STEPS steps (eval uses 40).
   - outer: Adam, weight decay 5e-4 (Rice 2020 setting).
   - selection: best ROBUST-val checkpoint, patience AT_PATIENCE (guards robust overfit).
   - every adversarial example (train and eval) is projected to the physically realizable
@@ -64,12 +82,16 @@ DL = {'CNN-1D': (CNN1DModel, 'cnn_1d'), 'LSTM': (LSTMModel, 'lstm'),
       'Transformer': (TransformerModel, 'transformer'), 'TCN': (TCNModel, 'tcn')}
 EPS = [0.05, 0.10, 0.20]
 TARGET_RECALL = 0.95
-AUG_EPS = 0.10          # inner-maximization L-inf budget for PGD adversarial training
+AUG_EPS = 0.10          # inner-maximization L-inf budget for adversarial training
 AT_PGD_STEPS = 10       # PGD steps for the inner max during training (eval uses 40)
 AT_MAX_EPOCHS = 30      # cap; early stopping on ROBUST val usually stops sooner
 AT_PATIENCE = 5         # robust-val patience (Rice 2020: guards against robust overfitting)
 AT_BATCH = 256
 N_EVAL = 4000
+TRADES_BETA = 1.0       # robustness/accuracy trade-off weight (Zhang et al. 2019
+                        # explore 1-10; 1.0 is their own reference default -- see
+                        # adv_train_model's docstring for why TRADES, not plain
+                        # Madry-style AT, is used here)
 
 
 def set_determinism(seed=42):
@@ -161,14 +183,54 @@ def robust_val_score(m, Xv_s, yv, enf, enf_phys, sc, eps, steps):
 
 def adv_train_model(cls, cfg_name, Xtr_s, ytr, Xv_s, yv, enf, enf_phys, sc,
                     eps, pgd_steps, max_epochs, patience, batch=AT_BATCH):
-    """PGD adversarial training (Madry 2018) with robust-validation early stopping
-    (Rice 2020). Adversarial examples are regenerated on the fly each mini-batch
-    against the current weights; the checkpoint with the best robust-val BALANCED
-    ACCURACY is restored (balanced accuracy, not spoof recall, so early stopping
-    cannot be gamed by an all-spoof collapse). Uses the model's own nn.Module so no
-    model file is modified."""
+    """TRADES adversarial training (Zhang et al. 2019, ICML) with robust-validation
+    early stopping (Rice 2020). Uses the model's own nn.Module so no model file is
+    modified.
+
+    Why TRADES, not plain Madry-style PGD-AT. Two things were tried and ruled out
+    first: BatchNorm eval-mode during the inner loop (Pang et al. 2021, "Bag of
+    Tricks for Adversarial Training", ICLR -- zero measurable effect here) and a
+    warm start from the undefended model (changed the training trajectory but not
+    the outcome). What did partially work -- reducing AUG_EPS below the natural
+    fragility margin (Shaeiri et al. 2020, "Towards Deep Learning Models Resistant
+    to Large Perturbations": AT provably fails to train once epsilon exceeds the
+    natural class margin, and AUG_EPS=0.10 exceeds every undefended DL model's own
+    median decision-boundary distance here, 0.041-0.067) -- fixed CNN-1D but not
+    LSTM, so epsilon alone isn't the whole story either. The common thread across
+    all of it: plain Madry-style AT trains ONLY on the adversarial view of each
+    batch (loss = BCE(model(x_adv), true_label)), with nothing anchoring the model
+    to reasonable clean-data behaviour. When epsilon is not small relative to the
+    natural margin, "always predict spoof" can become a genuine minimum of that
+    specific objective, not a bug in how it's computed -- consistent with every
+    model here collapsing to robust-val balanced accuracy flat at 0.500 (a
+    same-label-always classifier) and clean FAR -> 1.0. TRADES is the standard,
+    heavily-cited fix for exactly this: it adds an explicit natural-accuracy loss
+    term and replaces the adversarial objective with a KL-divergence term that
+    pulls the adversarial prediction toward the model's OWN clean prediction
+    rather than toward the raw label, so there is no longer a route to minimising
+    the loss by ignoring the input.
+
+    loss = BCE(model(x_natural), y) + TRADES_BETA * KL(model(x_adv) || model(x_natural))
+    (Zhang et al. 2019, eq. for loss_natural + beta*loss_robust), with the inner
+    maximisation searching for the delta that MAXIMISES that same KL term (not the
+    classification loss against the true label -- this is what anchors the search
+    to the model's own clean prediction instead of the raw label).
+
+    Binary adaptation. TRADES is specified for multi-class softmax + KLDivLoss;
+    every model here is binary with a single logit (BCEWithLogitsLoss). A scalar
+    logit z maps to an EXACTLY equivalent 2-class logit vector [0, z], since
+    softmax([0, z]) == [1-sigmoid(z), sigmoid(z)] identically -- this lets the KL
+    term reuse PyTorch's log_softmax/KLDivLoss machinery unchanged (numerically
+    stable) rather than hand-deriving and separately stabilising a Bernoulli-KL
+    formula.
+
+    BatchNorm stays in eval mode during the inner loop regardless (Bag of Tricks,
+    above) -- it didn't fix the collapse alone, but nothing in the literature
+    found suggests reverting it, and it remains the documented default risk for
+    multi-step inner loops with BatchNorm."""
     import torch
     import torch.nn as nn
+    import torch.nn.functional as F
     import copy
     from torch.utils.data import TensorDataset, DataLoader
 
@@ -177,9 +239,15 @@ def adv_train_model(cls, cfg_name, Xtr_s, ytr, Xv_s, yv, enf, enf_phys, sc,
     net, dev = m.model, m.device
     opt = torch.optim.Adam(net.parameters(),
                            lr=c.get('learning_rate', 1e-3), weight_decay=5e-4)
-    crit = nn.BCEWithLogitsLoss()
-    atk = PGDAttack(m, epsilon=eps, num_iter=pgd_steps, random_start=True,
-                    gnss_enforcer=enf)
+    bce = nn.BCEWithLogitsLoss()
+    kl = nn.KLDivLoss(reduction='batchmean')
+    alpha = eps / 4.0  # PGD step size, matches PGDAttack's own default convention
+
+    def to_2class(logits_1d):
+        # softmax([0, z]) == [1-sigmoid(z), sigmoid(z)] exactly -- an exact
+        # binary/categorical equivalence, not an approximation.
+        return torch.stack([torch.zeros_like(logits_1d), logits_1d], dim=1)
+
     ds = TensorDataset(torch.tensor(Xtr_s, dtype=torch.float32),
                        torch.tensor(ytr, dtype=torch.float32))
     dl = DataLoader(ds, batch_size=batch, shuffle=True)
@@ -187,15 +255,45 @@ def adv_train_model(cls, cfg_name, Xtr_s, ytr, Xv_s, yv, enf, enf_phys, sc,
     best_rob, best_state, ctr = -1.0, None, 0
     for epoch in range(max_epochs):
         for Xb, yb in dl:
-            # inner maximisation: PGD adversarial batch vs current weights, projected
-            # to the physically realizable set (same enforcer used at eval)
-            Xadv = atk.generate(Xb.numpy(), yb.numpy().astype(int))
-            Xadv = couple_scaled(Xadv, sc, enf_phys)
-            # outer minimisation: train to classify the adversarial batch correctly
+            xb = Xb.to(dev)
+            yb_dev = yb.to(dev)
+
+            # inner maximisation (TRADES): find delta maximising the KL divergence
+            # between the adversarial and the model's OWN clean prediction -- not
+            # the classification loss against the true label (that's plain Madry
+            # AT, which collapsed every model here; see docstring). BN in eval
+            # mode throughout (Bag of Tricks, above): stable running statistics,
+            # not the batch's own increasingly-perturbed statistics at each step.
+            net.eval()
+            with torch.no_grad():
+                natural_logits = net(xb)
+            delta = torch.empty_like(xb).uniform_(-eps, eps).to(dev)
+            for _ in range(pgd_steps):
+                delta = delta.clone().detach().requires_grad_(True)
+                adv_logits = net(xb + delta)
+                loss_kl = kl(F.log_softmax(to_2class(adv_logits), dim=1),
+                            F.softmax(to_2class(natural_logits), dim=1))
+                grad = torch.autograd.grad(loss_kl, delta)[0]
+                delta = (delta + alpha * grad.sign()).detach()
+                delta = torch.clamp(delta, -eps, eps)
+
+            # physical-realizability projection (same enforcer/re-clip pattern as
+            # every other attack in this codebase -- see e.g. dom_attacks above)
+            xadv_np = couple_scaled((xb + delta).cpu().numpy(), sc, enf_phys)
+            xadv_np = np.clip(xadv_np, xb.cpu().numpy() - eps, xb.cpu().numpy() + eps)
+            xb_adv = torch.tensor(xadv_np, dtype=torch.float32).to(dev)
+
+            # outer minimisation: natural loss (the clean-accuracy anchor plain
+            # Madry AT lacked) + beta * robust loss (KL divergence pulling the
+            # adversarial prediction toward the model's own clean prediction)
             net.train()
-            xb = torch.tensor(Xadv, dtype=torch.float32).to(dev)
             opt.zero_grad()
-            loss = crit(net(xb), yb.to(dev))
+            clean_logits = net(xb)
+            loss_natural = bce(clean_logits, yb_dev)
+            adv_logits = net(xb_adv)
+            loss_robust = kl(F.log_softmax(to_2class(adv_logits), dim=1),
+                             F.softmax(to_2class(clean_logits), dim=1))
+            loss = loss_natural + TRADES_BETA * loss_robust
             loss.backward(); opt.step()
         # robust-val model selection by BALANCED ACCURACY (degeneracy-proof; see
         # robust_val_score). Prevents the all-spoof collapse that a recall-only
