@@ -483,13 +483,13 @@ def fig_f12():
     bb = pd.read_csv(TAB / "blackbox_boundary_all.csv")
     asr = bb[bb.epsilon.astype(str) == "0.1"].set_index("model")["asr"]
 
-    fig, ax = plt.subplots(figsize=(FULL_W, 8.6 * CM))
-    # qualitative integrity-risk backdrop: darker toward high missed detection
+    fig, ax = plt.subplots(figsize=(FULL_W, 8.8 * CM))
+    # qualitative integrity-risk backdrop: green safe band along the bottom
     ax.axhspan(0.0, 0.10, color=GREEN, alpha=0.06, zorder=0)
-    ax.text(0.985, 0.055, "clean: spoof caught", ha="right", va="center",
+    ax.text(0.985, 0.075, "clean: spoof caught", ha="right", va="center",
             fontsize=6.6, color="#3a7a5c", style="italic")
-    ax.text(0.985, 0.955, "under realizable attack: spoof accepted (HMI)",
-            ha="right", va="center", fontsize=6.6, color=VERM, style="italic")
+    ax.text(0.315, 1.09, "under attack: spoof accepted (HMI)",
+            ha="left", va="center", fontsize=6.6, color=VERM, style="italic")
 
     for _, r in op.iterrows():
         m, fam = r["model"], r["family"]
@@ -506,18 +506,21 @@ def fig_f12():
         ax.scatter([far], [md_att], s=34, color=col, edgecolors=edge,
                    linewidths=0.7, zorder=4)
 
-    # direct labels on the two extremes of the attacked spread
-    lab = {"GradientBoosting": (0.350, 1.000, 8, 0),
-           "SVM": (0.960, 0.442, -6, 6)}
-    for name, (x, y, dx, dy) in lab.items():
-        ax.annotate(name, xy=(x, y), xytext=(x + dx * 0.01, y + dy * 0.01),
-                    fontsize=7, fontweight="bold", color=INK,
-                    ha="right" if dx < 0 else "left", va="center")
+    # direct labels on the two extremes, each with a thin leader to its exact
+    # point so neither can be misread as a neighbouring arrow
+    ax.annotate("GradientBoosting", xy=(0.350, 1.000), xytext=(0.55, 1.00),
+                fontsize=7, fontweight="bold", color=INK, ha="left", va="center",
+                arrowprops=dict(arrowstyle="-", color=INK, lw=0.6,
+                                shrinkA=1, shrinkB=3))
+    ax.annotate("SVM", xy=(0.960, 0.442), xytext=(0.885, 0.50),
+                fontsize=7, fontweight="bold", color=INK, ha="right", va="center",
+                arrowprops=dict(arrowstyle="-", color=INK, lw=0.6,
+                                shrinkA=1, shrinkB=3))
 
     ax.set_xlabel(r"Clean false-alarm rate $\rightarrow$ continuity risk")
     ax.set_ylabel(r"Missed-detection rate $\rightarrow$ integrity risk")
     ax.set_xlim(0.30, 1.0)
-    ax.set_ylim(-0.03, 1.06)
+    ax.set_ylim(-0.03, 1.14)
     handles = [
         mpl.lines.Line2D([0], [0], marker="o", color="w", markerfacecolor=MUTED,
                          markeredgecolor=INK, markersize=4.5, label="Clean operating point"),
@@ -526,8 +529,9 @@ def fig_f12():
         mpl.patches.Patch(facecolor=BLUE, edgecolor=EDGE["classical"], label="Classical"),
         mpl.patches.Patch(facecolor=ORANGE, edgecolor=EDGE["deep"], label="Deep"),
     ]
-    ax.legend(handles=handles, loc="center left", frameon=False, fontsize=7,
-              handletextpad=0.5, borderaxespad=0.4)
+    ax.legend(handles=handles, loc="upper right", frameon=True, fontsize=7,
+              handletextpad=0.5, borderaxespad=0.6, facecolor="white",
+              edgecolor="none", framealpha=0.92)
     fig.tight_layout()
     save(fig, "fig12_integrity_plane")
 
