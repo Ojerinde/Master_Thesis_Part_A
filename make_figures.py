@@ -130,9 +130,9 @@ def fig_f5():
 
 
 MODEL_ORDER = ["RandomForest", "XGBoost", "LightGBM", "GradientBoosting", "KNN",
-               "MLP", "DecisionTree", "CNN-1D", "LSTM", "BiLSTM", "CNN-LSTM",
+               "MLP", "DecisionTree", "SVM", "CNN-1D", "LSTM", "BiLSTM", "CNN-LSTM",
                "Transformer", "TCN"]
-FAMILY_OF = {m: ("classical" if i < 7 else "deep") for i, m in enumerate(MODEL_ORDER)}
+FAMILY_OF = {m: ("classical" if i < 8 else "deep") for i, m in enumerate(MODEL_ORDER)}
 
 
 def _gen_df():

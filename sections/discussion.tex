@@ -41,9 +41,9 @@ the support-vector machine moves from weakest on clean data to hardest to evade.
 \includegraphics[width=\linewidth]{figures/fig11_tradeoff_parallel.pdf}
 \caption{Each detector across four axes, normalised so higher is better on every axis:
 clean $F_1$, one minus the false-alarm rate, adversarial robustness and cross-scenario
-recall. No detector scores well on all four. The gradient-boosting model is best on
-clean detection and worst on robustness, and the nearest-neighbour model is the
-reverse.}
+recall. No detector scores well on all four. The gradient-boosting model is second only
+to the random forest on clean detection and worst on robustness, and the
+support-vector machine is the reverse: worst on clean detection, best on robustness.}
 \label{fig:tradeoff}
 \end{figure}
 

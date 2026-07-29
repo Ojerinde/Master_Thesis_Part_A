@@ -112,24 +112,27 @@ detectors, so the attack is not excluded by cost.
 Generalization to unseen conditions fails, and it fails by detector and by condition
 rather than by family. Figure~\ref{fig:generalization}(a) reports cross-scenario
 recall when a spoofing scenario is held out of training. Averaged over the three
-held-out scenarios the mean recall is 0.52 for the classical detectors and 0.44 for the
-deep detectors, with a standard deviation across the held-out scenarios of 0.20 and 0.25
+held-out scenarios the mean recall is 0.53 for the classical detectors and 0.49 for the
+deep detectors, with a standard deviation across the held-out scenarios of 0.20 and 0.30
 respectively, and the overpowered ds2 scenario is the worst case for every detector,
-with the random forest falling to a recall of 0.09. This
+with the random forest falling to a recall of 0.08. This
 reproduces, on an independent receiver pipeline, the collapse toward chance that
 physics-constrained work has reported for learned spoofing detectors on unseen
 scenarios \citep{song2026generalized}. The behaviour is scenario-dependent rather than
 a fixed family ranking: on the carrier-phase-aligned ds7 scenario two deep detectors
-reach a recall of 0.84 and outperform every classical detector.
+reach recalls of 0.94 and 0.89, above every classical detector's best of 0.86.
 
 Figure~\ref{fig:generalization}(b) reports recall across the eleven held-out satellites.
 Most satellites are handled well by most detectors, with per-detector median recall
-between 0.79 and 1.00, but the worst held-out satellite drives specific detectors near
-zero: the bidirectional LSTM falls to a recall of 0.006 on one held-out satellite, and
-the gradient-boosting model falls to 0.028 on another, while other detectors of the same
-family hold up on the identical fold. With eleven satellites this is a per-fold
-observation rather than a hypothesis-tested pattern, but the direction is consistent:
-cross-satellite failure is per-architecture and not predicted by the family label.
+between 0.56 and 1.00, but the worst held-out satellite drives specific detectors near
+zero: the gradient-boosting model falls to a recall of 0.007 on one held-out satellite,
+joined on the same fold by two other boosted-tree detectors while the random forest and
+decision tree are unaffected, and the one-dimensional convolutional network falls to
+0.060 on a different satellite while every other deep detector holds up. With eleven
+satellites this is a per-fold observation rather than a hypothesis-tested pattern, but
+the direction is consistent: cross-satellite failure is per-architecture and not
+predicted by the family label, not even at the finer grain of boosted trees versus
+other tree ensembles.
 
 \subsection{Statistical significance}
 \label{sec:res_stats}
