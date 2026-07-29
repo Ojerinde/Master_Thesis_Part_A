@@ -469,6 +469,69 @@ def fig_f11():
     save(fig, "fig11_tradeoff_parallel")
 
 
+# ============================================================================
+# F12 - Operational integrity plane: clean vs. under a fixed realizable attack
+# ============================================================================
+def fig_f12():
+    """Missed-detection vs false-alarm plane (the detection-domain integrity view).
+    Missed detection = integrity risk (a spoofed epoch the monitor accepts, the
+    precursor to hazardously misleading information); false alarm = continuity risk.
+    Each detector is shown at its clean operating point and after a fixed, physically
+    small decision-based attack budget (eps=0.10 ~ 6 dB), whose per-detector
+    decision-based ASR flips that fraction of the initially detected spoofed epochs."""
+    op = pd.read_csv(TAB / "operating_point_recall95.csv")
+    bb = pd.read_csv(TAB / "blackbox_boundary_all.csv")
+    asr = bb[bb.epsilon.astype(str) == "0.1"].set_index("model")["asr"]
+
+    fig, ax = plt.subplots(figsize=(FULL_W, 8.6 * CM))
+    # qualitative integrity-risk backdrop: darker toward high missed detection
+    ax.axhspan(0.0, 0.10, color=GREEN, alpha=0.06, zorder=0)
+    ax.text(0.985, 0.055, "clean: spoof caught", ha="right", va="center",
+            fontsize=6.6, color="#3a7a5c", style="italic")
+    ax.text(0.985, 0.955, "under realizable attack: spoof accepted (HMI)",
+            ha="right", va="center", fontsize=6.6, color=VERM, style="italic")
+
+    for _, r in op.iterrows():
+        m, fam = r["model"], r["family"]
+        far, recall = r["false_alarm_rate"], r["recall"]
+        a = float(asr.get(m, np.nan))
+        md_clean = 1.0 - recall
+        md_att = 1.0 - recall * (1.0 - a)          # FAR unchanged: attack targets spoof
+        col, edge = FAM_COLOR[fam], EDGE[fam]
+        ax.annotate("", xy=(far, md_att), xytext=(far, md_clean),
+                    arrowprops=dict(arrowstyle="-|>", color=col, lw=1.1,
+                                    alpha=0.55, shrinkA=2, shrinkB=2), zorder=2)
+        ax.scatter([far], [md_clean], s=14, color=col, edgecolors=edge,
+                   linewidths=0.5, zorder=3)
+        ax.scatter([far], [md_att], s=34, color=col, edgecolors=edge,
+                   linewidths=0.7, zorder=4)
+
+    # direct labels on the two extremes of the attacked spread
+    lab = {"GradientBoosting": (0.350, 1.000, 8, 0),
+           "SVM": (0.960, 0.442, -6, 6)}
+    for name, (x, y, dx, dy) in lab.items():
+        ax.annotate(name, xy=(x, y), xytext=(x + dx * 0.01, y + dy * 0.01),
+                    fontsize=7, fontweight="bold", color=INK,
+                    ha="right" if dx < 0 else "left", va="center")
+
+    ax.set_xlabel(r"Clean false-alarm rate $\rightarrow$ continuity risk")
+    ax.set_ylabel(r"Missed-detection rate $\rightarrow$ integrity risk")
+    ax.set_xlim(0.30, 1.0)
+    ax.set_ylim(-0.03, 1.06)
+    handles = [
+        mpl.lines.Line2D([0], [0], marker="o", color="w", markerfacecolor=MUTED,
+                         markeredgecolor=INK, markersize=4.5, label="Clean operating point"),
+        mpl.lines.Line2D([0], [0], marker="o", color="w", markerfacecolor=MUTED,
+                         markeredgecolor=INK, markersize=7, label="Under attack ($\\epsilon=0.10$)"),
+        mpl.patches.Patch(facecolor=BLUE, edgecolor=EDGE["classical"], label="Classical"),
+        mpl.patches.Patch(facecolor=ORANGE, edgecolor=EDGE["deep"], label="Deep"),
+    ]
+    ax.legend(handles=handles, loc="center left", frameon=False, fontsize=7,
+              handletextpad=0.5, borderaxespad=0.4)
+    fig.tight_layout()
+    save(fig, "fig12_integrity_plane")
+
+
 if __name__ == "__main__":
     print("Building figures ->", FIGD)
     fig_f4()
@@ -480,4 +543,5 @@ if __name__ == "__main__":
     fig_f2()
     fig_f3()
     fig_f9()
+    fig_f12()
     print("done")

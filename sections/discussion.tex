@@ -82,6 +82,32 @@ focus of ongoing work. The evidence here sets the requirement that such a defenc
 meet: it has to withstand a gradient-free attacker at a common operating point, not
 merely a transferred gradient attack.
 
+Framed in integrity terms, the consequence is direct. Figure~\ref{fig:integrity} places
+every detector on the missed-detection against false-alarm plane, where missed detection
+is the integrity risk that precedes hazardously misleading information and the
+false-alarm rate is the continuity risk. On clean data every detector sits in a narrow
+band of low missed detection, so each looks like a serviceable monitor. A single
+decision-based attack held to a fixed, physically small budget of $\varepsilon=0.10$,
+about 6 dB of $C/N_0$, lifts every detector out of that band: missed detection rises to
+between 0.44 and 1.00, so the monitor accepts most or all of the spoofed epochs it would
+otherwise flag. The ordering of the lifted points reproduces the fragility ranking of
+Section~\ref{sec:res_adv} on a safety-relevant axis, and no detector stays in a region
+an integrity monitor could use.
+
+\begin{figure}[tb]
+\centering
+\includegraphics[width=\linewidth]{figures/fig12_integrity_plane.pdf}
+\caption{Operational integrity view. Each detector is shown on the missed-detection
+against false-alarm plane at its clean operating point (small marker) and after a single
+decision-based attack at a fixed, physically small budget $\varepsilon=0.10$ (about 6 dB
+of $C/N_0$; large marker), with the false-alarm rate held at its clean value because the
+evasion attack targets spoofed epochs. Missed detection is the integrity risk that
+precedes hazardously misleading information; the false-alarm rate is the continuity risk.
+Every detector leaves the low-missed-detection band under the attack, and none remains in
+a region an integrity monitor could use.}
+\label{fig:integrity}
+\end{figure}
+
 Two findings compound for a practitioner before any adversary is considered. The clean
 false-alarm rate at the safety-first operating point is high, from 0.34 to 0.96
 (Table~\ref{tab:oppoint}), and cross-scenario recall collapses on an unseen attack. On

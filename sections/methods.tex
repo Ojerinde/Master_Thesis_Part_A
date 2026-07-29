@@ -63,10 +63,14 @@ but well above chance, so it is retained as the fourteenth detector and the SVM 
 
 A detector's recall, false-alarm rate and $F_1$ all depend on its decision threshold,
 so a comparison drawn at different thresholds confounds the detector with its operating
-point. We fix one common operating point for every model: the threshold
-$\eta^\star=\max\{\eta: R_\mathrm{val}(\eta)\ge 0.95\}$ that meets a clean-validation
-recall floor of 0.95, which is the safety-first choice for an integrity monitor. All
-clean and adversarial metrics are reported at $\eta^\star$. Because the false-alarm
+point. We fix one common operating point for every model,
+\begin{equation}
+\eta^\star = \max\{\eta : R_\mathrm{val}(\eta)\ge 0.95\},
+\label{eq:oppoint}
+\end{equation}
+the highest threshold whose recall $R_\mathrm{val}(\eta)$ on the clean validation block
+still meets a floor of 0.95, which is the safety-first choice for an integrity monitor.
+All clean and adversarial metrics are reported at $\eta^\star$. Because the false-alarm
 rate at this recall floor is informative in its own right, we also report a second
 operating point defined by a clean-validation false-alarm ceiling of 0.05, so that a
 high false-alarm rate at the recall floor is visible rather than hidden by the choice
@@ -77,8 +81,9 @@ of threshold.
 
 Every detector is attacked by one shared suite at $\eta^\star$. The white-box attacks
 are the single-step fast gradient sign method \citep{goodfellow2015explaining} and
-iterative projected gradient descent \citep{madry2018towards}, applied to the
-differentiable deep detectors. For the non-differentiable classical detectors the
+iterative projected gradient descent \citep{madry2018towards}, both bounded by the
+$L_\infty$ budget $\varepsilon$ and applied to the differentiable deep detectors. For
+the non-differentiable classical detectors the
 gradient attacks are transferred from deep surrogates, both from a single
 convolutional surrogate and from a mean-logit ensemble of three surrogates, since an
 ensemble of surrogates transfers more strongly than one
@@ -92,10 +97,22 @@ Doppler and $C/N_0$ observables. These attacks are heuristic and physically moti
 rather than optimised against the detector.
 
 The decisive element of the suite is a gradient-free decision-based boundary attack
-applied to every detector \citep{brendel2018decision}. For each correctly detected
-spoofed sample it searches for the smallest $L_\infty$ perturbation, in the min-max
-normalised observable space, that moves the sample across the decision boundary to the
-authentic side at $\eta^\star$. Because the attack uses only the hard decision, it
+applied to every detector. For each correctly detected spoofed sample it searches, in
+the min-max normalised observable space, for the smallest $L_\infty$ perturbation that
+moves the sample across the decision boundary to the authentic side at $\eta^\star$,
+\begin{equation}
+\rho(\mathbf{x}) = \min_{\bm{\delta}}\ \lVert\bm{\delta}\rVert_\infty
+\quad\text{subject to}\quad
+s\!\big(\Pi_\mathcal{F}(\mathbf{x}+\bm{\delta})\big) < \eta^\star ,
+\label{eq:fragility}
+\end{equation}
+the minimal-perturbation objective of \citet{szegedy2014intriguing} solved with
+hard-label queries in the manner of \citet{brendel2018decision}, evaluated on
+realizable examples through the enforcer $\Pi_\mathcal{F}$ of
+Section~\ref{sec:enforcer}. The per-sample minimum $\rho(\mathbf{x})$ is the fragility
+measure, and a detector's fragility is the median of $\rho$ over its correctly detected
+spoofed samples: a smaller median means a smaller perturbation suffices, so the detector
+is more fragile. Because the attack uses only the hard decision, it
 applies uniformly to differentiable and non-differentiable detectors and provides the
 matched measure of vulnerability that a transferred gradient attack cannot. The suite
 characterises $L_\infty$ vulnerability; other norms such as $L_2$ or $L_0$
@@ -106,12 +123,20 @@ of this study.
 \label{sec:enforcer}
 
 Every adversarial example, at both training and evaluation, is projected onto the set
-of physically attainable receiver states by a signal-validity enforcer fitted on the
-training partition. Each observable is first clipped to a conservative data-driven
-band. The enforcer then constrains $C/N_0$ to the empirical residual band of the value
-predicted from the perturbed correlator power $I_P^2+Q_P^2$, so an attacker cannot
-raise the reported signal quality without also supplying the correlator power that
-would produce it. This encodes the physical relation between the spoofer's amplitude
+$\mathcal{F}$ of physically attainable receiver states,
+$\tilde{\mathbf{x}}=\Pi_\mathcal{F}(\mathbf{x}+\bm{\delta})$, by a signal-validity
+enforcer fitted on the training partition. Each observable is first clipped to a
+conservative data-driven band. The enforcer then
+couples the reported $C/N_0$ to the correlator power: it fits the log-linear relation
+$\widehat{C/N_0}=a+b\log_{10}(I_P^2+Q_P^2)$ by least squares on the training partition
+and admits only reported values within the empirical residual band of that prediction,
+\begin{equation}
+q_{1} \le (C/N_0) - \big(a + b\log_{10}(I_P^2+Q_P^2)\big) \le q_{99},
+\label{eq:coupling}
+\end{equation}
+where $q_{1}$ and $q_{99}$ are the first and ninety-ninth percentiles of the training
+residuals. An attacker therefore cannot raise the reported signal quality without also
+supplying the correlator power that would produce it. This encodes the physical relation between the spoofer's amplitude
 control and the reported observables and is what separates a realizable attack from an
 arbitrary feature perturbation. Figure~\ref{fig:realizability} illustrates the effect.
 An attack that raises the reported $C/N_0$ without supplying the correlator power that
@@ -144,6 +169,8 @@ across satellites. Every fold sets the common operating point on its own validat
 block and retrains each detector on its own training block, so no information from the
 held-out fold enters training.
 
+The effect of the fixed-budget attacks is summarised by the attack success rate, the
+fraction of initially correct detections that an attack flips at $\eta^\star$.
 Uncertainty on the clean $F_1$ is reported as a 10{,}000-sample bootstrap confidence
 interval, and the median minimum $L_\infty$ perturbation of each detector is reported
 with a 10{,}000-sample bootstrap interval over the attacked samples. Pairwise detector

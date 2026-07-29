@@ -5,12 +5,26 @@ We evaluate every detector under one common threat model. We specify it in the s
 adversarial-machine-learning terms that separate the attacker's goal from its knowledge
 of the detector and its capability to shape the input \citep{biggio2018wild}. The
 attacker is a spoofer that already transmits counterfeit signals and seeks to convert a
-spoofed observation the detector would flag into one it accepts. The attacker manipulates
-the transmitted signal, which in turn moves the receiver observables within the physical
-limits set out in Section~\ref{sec:signal}. The gradient attacks (FGSM, PGD) and their
-transfer variants are bounded by a fixed budget $\varepsilon\in\{0.05,0.10,0.20\}$ in the
-standardised feature space that the deep detectors consume, and the GNSS domain attacks
-apply a fixed budget in each detector's own input space. The gradient-free decision-based
+spoofed observation the detector would flag into one it accepts. A detector maps an
+observable vector $\mathbf{x}\in\mathbb{R}^{d}$ to a spoof score $s(\mathbf{x})\in[0,1]$
+and flags the epoch as spoofed when $s(\mathbf{x})\ge\eta$ at an operating threshold
+$\eta$ (Section~\ref{sec:oppoint}). The attacker manipulates the transmitted signal,
+which in turn moves the receiver observables within the physical limits set out in
+Section~\ref{sec:signal}, seeking an additive perturbation $\bm{\delta}$ that turns a
+spoofed observation the detector would flag ($y=1$, $s(\mathbf{x})\ge\eta$) into one it
+accepts,
+\begin{equation}
+s(\mathbf{x}+\bm{\delta}) < \eta,
+\qquad \lVert\bm{\delta}\rVert_\infty \le \varepsilon,
+\qquad \mathbf{x}+\bm{\delta}\in\mathcal{F},
+\label{eq:threat}
+\end{equation}
+where $\lVert\cdot\rVert_\infty$ is measured in the min-max normalised observable space,
+$\varepsilon$ is the perturbation budget, and $\mathcal{F}$ is the physically realizable
+set imposed by the signal-validity enforcer of Section~\ref{sec:enforcer}. The gradient
+attacks (FGSM, PGD) and their transfer variants fix
+$\varepsilon\in\{0.05,0.10,0.20\}$; the GNSS domain attacks apply a fixed budget in each
+detector's own input space. The gradient-free decision-based
 attack is the exception: rather than test a fixed budget it searches for the smallest
 perturbation that flips each sample, measured as a min-max normalised $L_\infty$ distance,
 and this per-sample minimum is the fragility measure reported in
