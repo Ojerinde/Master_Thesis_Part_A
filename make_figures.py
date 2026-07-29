@@ -325,7 +325,7 @@ def fig_f9():
     save(fig, "fig09_realizability")
 
 
-MAT = REPO.parent / "FGI_Data" / "out" / "trackData_cleanStatic_full.mat"
+MAT = HERE.parents[1] / "data" / "FGI_Data" / "out" / "trackData_cleanStatic_full.mat"
 
 
 # ============================================================================
@@ -445,7 +445,7 @@ def fig_f11():
                 alpha=0.75, marker="o", markersize=3.2, zorder=2)
     # label the two extremes of the robustness axis, which carry the story;
     # distinct dash patterns so the two highlighted detectors stay separable
-    for name, ls, dy in [("GradientBoosting", "-", -0.035), ("KNN", (0, (5, 2)), 0.03)]:
+    for name, ls, dy in [("GradientBoosting", "-", -0.035), ("SVM", (0, (5, 2)), 0.03)]:
         r = norm[norm.model == name].iloc[0]
         ax.plot(xs, [r[c] for c in cols], color=INK, linewidth=1.9, zorder=5,
                 linestyle=ls, marker="o", markersize=4)
@@ -462,7 +462,7 @@ def fig_f11():
     handles = [mpl.patches.Patch(facecolor=BLUE, edgecolor=EDGE["classical"], label="Classical"),
                mpl.patches.Patch(facecolor=ORANGE, edgecolor=EDGE["deep"], label="Deep"),
                mpl.lines.Line2D([0], [0], color=INK, lw=1.9, label="GradientBoosting"),
-               mpl.lines.Line2D([0], [0], color=INK, lw=1.9, ls=(0, (5, 2)), label="KNN")]
+               mpl.lines.Line2D([0], [0], color=INK, lw=1.9, ls=(0, (5, 2)), label="SVM")]
     ax.legend(handles=handles, loc="lower center", bbox_to_anchor=(0.5, 1.0),
               ncol=4, frameon=False, fontsize=7.5, columnspacing=1.4)
     fig.tight_layout()

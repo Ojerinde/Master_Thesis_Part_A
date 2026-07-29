@@ -9,10 +9,19 @@ between detection utility and robustness, not a security guarantee. The trade-of
 direct: Figure~\ref{fig:inversion} ranks the detectors by clean $F_1$ and by the
 perturbation needed to evade them, and the two orderings are close to reversed, so the
 detector that is strongest on clean data is among the weakest under attack. The
-nearest-neighbour detector is the clearest instance, since it resists the
+support-vector machine is the clearest instance, since it resists the
 decision-based attack more than any other detector yet has the weakest clean $F_1$ and
 the highest false-alarm rate, so its robustness is bought at a utility cost that a
-fielded integrity monitor could not accept. Figure~\ref{fig:tradeoff} places all four
+fielded integrity monitor could not accept. The mechanism is visible at its operating
+point: it labels 98.6\% of spoofed epochs and 96.0\% of genuine epochs as spoofed
+(Table~\ref{tab:oppoint}), so before any attack its decision surface already assigns
+almost everything to the spoofed side; an adversary has to cross more of that surface
+to reach the small region the model still calls genuine, which is exactly what a
+larger measured perturbation reflects. This is a robustness-accuracy trade-off in the
+sense of \citet{tsipras2019robustness} rather than a property to design for: the same
+operating point that inflates the false-alarm rate also inflates the measured
+robustness, so the fragility ranking on its own is not a ranking of which detector an
+operator should prefer. Figure~\ref{fig:tradeoff} places all four
 axes side by side, and no detector scores well on all of them: strength on clean
 detection, on the false-alarm rate, on adversarial robustness and on cross-scenario
 recall are in tension rather than aligned.
@@ -23,7 +32,7 @@ recall are in tension rather than aligned.
 \caption{Detector rank by clean $F_1$ (left) against rank by the median $L_\infty$
 perturbation needed to evade the decision-based attack (right). The two orderings are
 close to reversed: the detectors strongest on clean data are the easiest to evade, and
-the nearest-neighbour detector moves from weakest on clean data to hardest to evade.}
+the support-vector machine moves from weakest on clean data to hardest to evade.}
 \label{fig:inversion}
 \end{figure}
 
@@ -43,8 +52,8 @@ non-differentiability is not robustness. A tree ensemble or a nearest-neighbour
 classifier denies a gradient attack a useful gradient, so its survival under such an
 attack carries no information about its robustness. Measured through the decision
 boundary instead, the ordering reverses: the boosted-tree detectors are the
-easiest to evade, and the gradient-boosting model that is strongest on clean data is
-the most fragile of all. Any future evaluation of a GNSS spoofing detector that claims
+easiest to evade, and the gradient-boosting model, second only to the random forest on
+clean data, is the most fragile of all. Any future evaluation of a GNSS spoofing detector that claims
 robustness for a non-differentiable model should include a gradient-free attack for
 this reason.
 
@@ -74,9 +83,9 @@ meet: it has to withstand a gradient-free attacker at a common operating point, 
 merely a transferred gradient attack.
 
 Two findings compound for a practitioner before any adversary is considered. The clean
-false-alarm rate at the safety-first operating point is high, from 0.30 to 0.69
+false-alarm rate at the safety-first operating point is high, from 0.34 to 0.96
 (Table~\ref{tab:oppoint}), and cross-scenario recall collapses on an unseen attack. On
-this evidence none of the thirteen detectors is deployable as a stand-alone,
+this evidence none of the fourteen detectors is deployable as a stand-alone,
 single-epoch integrity monitor today, independently of adversarial robustness. A fielded
 monitor would fuse decisions over time, through a vote or a sequential test across
 epochs, which trades detection latency for a lower per-decision false-alarm rate; the

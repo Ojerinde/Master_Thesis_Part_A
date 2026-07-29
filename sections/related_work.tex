@@ -84,7 +84,7 @@ operating on reported position, showing that a detector with high nominal accura
 be defeated by an adversary that shapes its input, and identify the robustness of other
 detector architectures under black-box conditions as an open question.
 
-The evaluation reported here addresses that question directly. It covers thirteen
+The evaluation reported here addresses that question directly. It covers fourteen
 detectors spanning both families, places them at a shared operating point, applies one
 attack suite to all of them including a gradient-free decision-based attack that
 measures vulnerability without relying on gradients, and projects every adversarial
@@ -102,7 +102,7 @@ GNSS spoofing detectors.}
 \toprule
  & \citet{an2025adversarial} & This work \\
 \midrule
-Detectors            & one (SVM)             & thirteen (7 classical, 6 deep) \\
+Detectors            & one (SVM)             & fourteen (8 classical, 6 deep) \\
 Attack domain        & reported position     & receiver observables \\
 Attacks              & DLSA, SNA             & FGSM/PGD, transfer, 3 domain, decision-based \\
 Gradient-free attack & no                    & yes (decision-based boundary) \\

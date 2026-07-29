@@ -56,7 +56,7 @@
 \abstract{Machine-learning detectors are increasingly proposed to protect Global
 Navigation Satellite System (GNSS) receivers against spoofing, yet their behaviour
 under a deliberate, adaptive adversary is not well established. This paper reports an
-adversarial evaluation of thirteen detectors, six deep networks and seven classical
+adversarial evaluation of fourteen detectors, six deep networks and eight classical
 models, on
 receiver observables produced by an open software-defined receiver from the static
 family of the Texas Spoofing Test Battery, a stationary-receiver setting. Every detector is placed at a common operating point of clean
@@ -65,11 +65,14 @@ attacks, multi-surrogate transfer, three GNSS domain manipulations and a
 gradient-free decision-based attack. Each adversarial example is projected onto the
 physically realizable set so that no reported attack corresponds to a signal the
 spoofer could not transmit. On clean data no family dominates, with $F_1$ between
-0.74 and 0.84. Under the decision-based attack every detector, differentiable or not,
+0.68 and 0.83. Under the decision-based attack every detector, differentiable or not,
 is driven to a worst-case spoof recall near zero. The boosted-tree detectors require
-the smallest perturbation to evade, and the detector with the strongest clean
-performance is the most fragile, so resistance to a gradient attack does not by itself
-indicate robustness. GNSS manipulations bounded to a fixed realizable budget leave
+the smallest perturbation to evade, led by a model that is second only to the best
+detector on clean data, so resistance to a gradient attack does not by itself indicate
+robustness. The lone outlier, a support-vector machine, needs roughly six times the
+perturbation of the most fragile detector to evade, but only because its operating
+point already calls almost everything spoofed, a robustness-accuracy trade-off rather
+than a property to design for. GNSS manipulations bounded to a fixed realizable budget leave
 detection almost unchanged while learned perturbations do not, which places the threat
 in the learned attack rather than in simple signal shaping. Cross-scenario evaluation shows detection calibrated to 0.95
 recall falling to a mean of 0.52 on an unseen overpowered attack, and cross-satellite

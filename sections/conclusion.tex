@@ -1,7 +1,7 @@
 \section{Conclusion}
 \label{sec:conclusion}
 
-We reported a model-fair adversarial evaluation of thirteen machine-learning GNSS
+We reported a model-fair adversarial evaluation of fourteen machine-learning GNSS
 spoofing detectors on receiver observables produced by an open software-defined
 receiver from the Texas Spoofing Test Battery. Every detector was placed at a common
 operating point and attacked by one shared suite that included a gradient-free
@@ -9,10 +9,14 @@ decision-based attack, and every adversarial example was projected onto the phys
 realizable set so that no reported attack corresponds to an untransmittable signal.
 
 Four results follow. On clean data no architecture family dominates, with $F_1$ between
-0.74 and 0.84. Under the decision-based attack every detector is driven to a worst-case
+0.68 and 0.83. Under the decision-based attack every detector is driven to a worst-case
 spoof recall near zero, and measured through the decision boundary the boosted-tree
-detectors are the easiest to evade while the strongest clean detector is the most
-fragile, so resistance to a gradient attack does not by itself indicate robustness.
+detectors are the easiest to evade, led by a model that is second only to the best
+detector on clean data, so resistance to a gradient attack does not by itself indicate
+robustness. The lone outlier, a support-vector machine, needs roughly six times the
+perturbation of the most fragile detector to evade, but only because its operating
+point already calls almost everything spoofed, a robustness-accuracy trade-off rather
+than a property to design for.
 GNSS manipulations bounded to the same realizable budget are almost harmless, so the
 threat is the learned attack rather than naive signal shaping. Cross-scenario and
 cross-satellite generalization fails per detector and per condition, reproducing on an

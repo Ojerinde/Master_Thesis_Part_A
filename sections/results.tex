@@ -6,29 +6,32 @@
 
 At the common operating point no architecture family dominates on clean data.
 Table~\ref{tab:oppoint} and Figure~\ref{fig:detection} report detection at the
-recall-0.95 threshold. The $F_1$ scores fall in a band from 0.736 to 0.843, and the
+recall-0.95 threshold. The $F_1$ scores fall in a band from 0.682 to 0.833, and the
 classical and deep detectors are interleaved through it: the best detector is the
-classical gradient-boosting model at 0.843, the deep bidirectional LSTM at 0.789 sits
-above two classical models, and the weakest two are deep. The area under the ROC
-curve tells the same story, ranging from 0.803 to 0.903 with no separation by family.
-The bootstrap confidence intervals on $F_1$ are narrow, within about $\pm0.004$, so the
-ordering is stable but the spread across families is small. A comparison drawn at a
-single operating point therefore does not, by construction, favour deep or classical
-detectors.
+classical random forest at 0.833, the deep temporal convolutional network at 0.805
+sits above five classical models, and the weakest detector is classical, the
+radial-basis-function support-vector machine at 0.682, the only detector below 0.70.
+The area under the ROC curve tells a similar story, ranging from 0.648 to 0.908 with no
+clean separation by family. The bootstrap confidence intervals on $F_1$ are narrow,
+within about $\pm0.005$, so the ordering is stable but the spread across families is
+small. A comparison drawn at a single operating point therefore does not, by
+construction, favour deep or classical detectors.
 
-The false-alarm rate at the recall floor is high, from 0.30 to 0.69, which reflects the
-difficulty of the corpus once the recording-identity shortcut is removed. Reporting the
-second operating point makes this explicit rather than hidden. When a clean-validation
-false-alarm ceiling of 0.05 is imposed instead, three of the tree-based detectors
-cannot reach it at any threshold, and the gradient-boosting model that meets it on
-validation does not carry the low false-alarm rate to the test set. Detection on this
-corpus is thus honest but far from solved, which is the right baseline against which to
-measure adversarial degradation.
+The false-alarm rate at the recall floor is high, from 0.34 to 0.96, reflecting both
+the difficulty of the corpus once the recording-identity shortcut is removed and, at
+the upper end, the weak discriminative power of the least separable detector, the
+support-vector machine (Section~\ref{sec:detectors}). Reporting the second operating
+point makes this explicit rather than hidden. When a clean-validation false-alarm
+ceiling of 0.05 is imposed instead, two of the tree-based detectors, XGBoost and the
+decision tree, cannot reach it at any threshold, and the gradient-boosting model that
+meets it on validation does not carry the low false-alarm rate to the test set.
+Detection on this corpus is thus honest but far from solved, which is the right
+baseline against which to measure adversarial degradation.
 
 \begin{table}[t]
 \centering
 \caption{Clean detection at the common operating point (clean-validation recall
-$=0.95$). Recall, false-alarm rate (FAR), precision, $F_1$ and AUC are on the test
+$=0.95$). Recall, false-alarm rate (FAR), $F_1$ and AUC are on the test
 partition; $\eta^\star$ is the decision threshold. No family dominates.}
 \label{tab:oppoint}
 \small
@@ -36,20 +39,21 @@ partition; $\eta^\star$ is the decision threshold. No family dominates.}
 \toprule
 Model & Family & $\eta^\star$ & Recall & FAR & $F_1$ & AUC \\
 \midrule
-GradientBoosting & classical & 0.59 & 0.931 & 0.296 & 0.843 & 0.890 \\
-RandomForest     & classical & 0.70 & 0.941 & 0.336 & 0.834 & 0.874 \\
-XGBoost          & classical & 0.60 & 0.972 & 0.456 & 0.809 & 0.879 \\
-LightGBM         & classical & 0.57 & 0.964 & 0.455 & 0.806 & 0.861 \\
-MLP              & classical & 0.07 & 0.935 & 0.431 & 0.799 & 0.900 \\
-DecisionTree     & classical & 0.07 & 0.967 & 0.522 & 0.787 & 0.803 \\
-KNN              & classical & 0.08 & 0.953 & 0.607 & 0.755 & 0.826 \\
+RandomForest     & classical & 0.705 & 0.941 & 0.337 & 0.833 & 0.876 \\
+GradientBoosting & classical & 0.660 & 0.937 & 0.350 & 0.827 & 0.876 \\
+XGBoost          & classical & 0.625 & 0.972 & 0.451 & 0.811 & 0.885 \\
+LightGBM         & classical & 0.505 & 0.966 & 0.464 & 0.804 & 0.863 \\
+KNN              & classical & 0.090 & 0.957 & 0.462 & 0.800 & 0.884 \\
+DecisionTree     & classical & 0.070 & 0.967 & 0.522 & 0.787 & 0.803 \\
+MLP              & classical & 0.175 & 0.947 & 0.587 & 0.758 & 0.866 \\
+SVM              & classical & 0.510 & 0.986 & 0.960 & 0.682 & 0.648 \\
 \midrule
-BiLSTM           & deep      & 0.05 & 0.949 & 0.483 & 0.789 & 0.903 \\
-TCN              & deep      & 0.11 & 0.947 & 0.501 & 0.783 & 0.897 \\
-LSTM             & deep      & 0.08 & 0.939 & 0.501 & 0.779 & 0.890 \\
-Transformer      & deep      & 0.10 & 0.976 & 0.643 & 0.756 & 0.903 \\
-CNN-1D           & deep      & 0.09 & 0.945 & 0.632 & 0.744 & 0.851 \\
-CNN-LSTM         & deep      & 0.07 & 0.962 & 0.690 & 0.736 & 0.865 \\
+TCN              & deep      & 0.210 & 0.944 & 0.427 & 0.805 & 0.908 \\
+BiLSTM           & deep      & 0.095 & 0.955 & 0.662 & 0.741 & 0.869 \\
+LSTM             & deep      & 0.155 & 0.952 & 0.679 & 0.735 & 0.843 \\
+CNN-LSTM         & deep      & 0.080 & 0.958 & 0.693 & 0.734 & 0.855 \\
+CNN-1D           & deep      & 0.115 & 0.964 & 0.737 & 0.725 & 0.856 \\
+Transformer      & deep      & 0.225 & 0.956 & 0.794 & 0.707 & 0.817 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -58,40 +62,49 @@ CNN-LSTM         & deep      & 0.07 & 0.962 & 0.690 & 0.736 & 0.865 \\
 \label{sec:res_adv}
 
 Under the matched attack no detector is robust. Against the gradient-free
-decision-based attack every one of the thirteen detectors is driven to a worst-case
+decision-based attack every one of the fourteen detectors is driven to a worst-case
 spoof recall near zero, so at an unbounded budget an attacker flips every correctly
 detected spoofed sample to the authentic side. The informative quantity is therefore
 how large a perturbation the attack needs, shown in Figure~\ref{fig:fragility} as the
 median minimum $L_\infty$ perturbation that evades each detector.
 
-This measure overturns the reading that non-differentiable detectors are robust. The
-gradient-boosting model, which has the best clean $F_1$, is the most fragile of all: a
-median perturbation of 0.009 (95\% bootstrap interval 0.008 to 0.014) evades it, well
-separated from every other detector. The remaining tree detectors need 0.021 to 0.025
-and the multilayer perceptron 0.033, all smaller than the 0.040 to 0.071 required by the
-deep detectors, and the nearest-neighbour detector is the single exception at 0.101
-(0.093 to 0.108). The bootstrap intervals resolve the coarse ordering but not every
-pair: within the 0.021 to 0.025 tree cluster the intervals of LightGBM, XGBoost,
-DecisionTree and RandomForest overlap, so their internal ranking is not resolved, whereas
-the gradient-boosting model, the deep band and the nearest-neighbour detector are each
-clearly separated. The nearest-neighbour detector
-pays for its resistance with the weakest clean $F_1$ and the highest false-alarm rate
-in Table~\ref{tab:oppoint}. The apparent robustness of the tree and nearest-neighbour
-detectors under a transferred gradient attack is thus an artifact of the attack, not a
-property of the architecture: when the same detectors are attacked through their
-decision boundary they are the easiest to evade. The multi-surrogate transfer is
-stronger than the single-surrogate transfer, yet both understate the vulnerability that
-the decision-based attack reveals.
+This measure overturns the reading that non-differentiable detectors are robust, for
+most of the classical family. The five tree-based classical detectors, gradient
+boosting, XGBoost, LightGBM, the decision tree and the random forest, form the most
+fragile cluster, a chain of overlapping 95\% bootstrap intervals spanning a median of
+0.019 to 0.025; gradient boosting has the smallest point estimate but its interval
+overlaps XGBoost's, so the point-estimate ordering within the cluster is not resolved.
+The multilayer perceptron (0.039) and the temporal convolutional network (0.041) sit
+above this cluster and overlap each other but not it. The nearest-neighbour detector
+and five of the six deep models, the Transformer, CNN-1D, BiLSTM, LSTM and CNN-LSTM,
+form a second chain of overlapping intervals from 0.055 to 0.067, so the
+nearest-neighbour detector is not the clean classical exception in the deep band that
+its point estimate alone would suggest.
+
+The support-vector machine stands apart from every other detector: a median
+perturbation of 0.111 (0.105 to 0.117) evades it, roughly 1.7 times the perturbation
+needed for the next-most-robust detector and roughly six times that needed for the
+most fragile, and its interval does not overlap any other detector's.
+Section~\ref{sec:discussion} interprets why this coincides with the weakest clean
+performance in Table~\ref{tab:oppoint} rather than the strongest.
+
+The apparent robustness of the tree and nearest-neighbour detectors under a
+transferred gradient attack is thus an artifact of the attack, not a property of the
+architecture: when the same detectors are attacked through their decision boundary
+they are among the easiest to evade. The multi-surrogate transfer is stronger than the
+single-surrogate transfer, yet both understate the vulnerability that the
+decision-based attack reveals.
 
 The three GNSS domain attacks, each bounded to a fixed budget in the detector's own input
-space and projected onto the realizable set, are far weaker than the learned attacks. Their attack success rate has
-median 0.004, interquartile range 0.001 to 0.018 and a worst case of 0.193, so it is
-near zero for most detectors, so naive in-budget manipulation of
-the observables does not fool the detectors while the learned perturbations do. The threat therefore lies in the learned attack rather than
-in simple signal shaping, and every learned attack in this study corresponds to a
-transmittable signal because of the enforcer of Section~\ref{sec:enforcer}. Attack
-generation is fast relative to inference for all detectors, so the attack is not
-excluded by cost.
+space and projected onto the realizable set, are far weaker than the learned attacks.
+Their attack success rate has median 0.076, interquartile range 0.031 to 0.198 and a
+worst case of 0.548, well below the learned attacks' median success rate of 0.35 (FGSM)
+and 0.76 (PGD) at matched budgets, so naive in-budget manipulation of the observables is
+markedly less effective than the learned perturbations. The threat therefore lies in the
+learned attack rather than in simple signal shaping, and every learned attack in this
+study corresponds to a transmittable signal because of the enforcer of
+Section~\ref{sec:enforcer}. Attack generation is fast relative to inference for all
+detectors, so the attack is not excluded by cost.
 
 \subsection{Generalization}
 \label{sec:res_gen}
@@ -122,11 +135,11 @@ cross-satellite failure is per-architecture and not predicted by the family labe
 \label{sec:res_stats}
 
 The detectors are pairwise distinguishable. Across the McNemar tests over all detector
-pairs, with Holm correction, 74 of 78 pairs differ at the adjusted 0.05 level, so the
+pairs, with Holm correction, 88 of 91 pairs differ at the adjusted 0.05 level, so the
 comparison is not undermined by detectors that make identical errors. The Friedman test
 finds strong heterogeneity across attacks within each family, over five attack
-conditions (deep $\chi^2(4)=22.9$, $p=1.3\times10^{-4}$; classical $\chi^2(4)=26.9$,
-$p=2.1\times10^{-5}$), which confirms
+conditions (deep $\chi^2(4)=20.1$, $p=4.7\times10^{-4}$; classical $\chi^2(4)=26.8$,
+$p=2.2\times10^{-5}$), which confirms
 that attack choice, and in particular the decision-based attack, is what drives the
 degradation.
 
@@ -144,10 +157,11 @@ no family dominates.}
 \includegraphics[width=\linewidth]{figures/fig06_fragility_ranking.pdf}
 \caption{Median minimum $L_\infty$ perturbation needed to evade each detector under the
 gradient-free decision-based attack, with 95\% bootstrap confidence intervals over the
-500 attacked samples per detector. Smaller is more fragile. The tree detectors are the
-easiest to evade, the gradient-boosting model most of all despite its best clean $F_1$,
-and the nearest-neighbour detector is the single robust outlier; within the tree cluster
-the intervals overlap, so their internal ranking is not resolved.}
+500 attacked samples per detector. Smaller is more fragile. The five tree-ensemble
+classical detectors are the easiest to evade; the support-vector machine is the single
+robust outlier, needing roughly six times the perturbation of the most fragile
+detector. Within the tree cluster and within the nearest-neighbour/deep-model band the
+intervals overlap, so neither internal ranking is resolved.}
 \label{fig:fragility}
 \end{figure}
 

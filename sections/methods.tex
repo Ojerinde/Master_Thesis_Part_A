@@ -33,24 +33,30 @@ performance.
 \subsection{Detectors}
 \label{sec:detectors}
 
-We evaluate thirteen detectors. The seven classical models are a random forest
+We evaluate fourteen detectors. The eight classical models are a random forest
 \citep{breiman2001random}, gradient boosting \citep{friedman2001greedy}, XGBoost
 \citep{chen2016xgboost}, LightGBM \citep{ke2017lightgbm}, a $k$-nearest-neighbour
-classifier, a multilayer perceptron and a decision tree. The six deep models are a
-one-dimensional convolutional network, a long short-term memory network
-\citep{hochreiter1997long}, a bidirectional LSTM, a convolutional-recurrent hybrid, a
-Transformer \citep{vaswani2017attention} and a temporal convolutional network
-\citep{bai2018empirical}. The multilayer perceptron is a shallow feed-forward model and
-is grouped with the classical detectors. Each model consumes the nine observables of
-Section~\ref{sec:features}. The thirteen span the classifier families used across the
-cited detection literature of Section~\ref{sec:related}: tree ensembles and boosting,
-instance-based classification, a shallow feed-forward network, and, among the deep
-models, the convolutional, recurrent, hybrid and attention-based branches of sequence
-modelling. A linear classifier, the family of the support-vector machine that
-\citet{an2025adversarial} attack, was also trained on this corpus and separates the
-classes far worse than every detector in Table~\ref{tab:oppoint}, so a linear model is
-excluded from the thirteen attacked: a detector that does not separate the classes to
-begin with is not an informative adversarial-robustness test.
+classifier, a multilayer perceptron, a decision tree and a support-vector machine with a
+radial-basis-function kernel, tuned by the same five-fold grid search as every other
+classical model. The six deep models are a one-dimensional convolutional network, a long
+short-term memory network \citep{hochreiter1997long}, a bidirectional LSTM, a
+convolutional-recurrent hybrid, a Transformer \citep{vaswani2017attention} and a temporal
+convolutional network \citep{bai2018empirical}. The multilayer perceptron is a shallow
+feed-forward model and is grouped with the classical detectors. Each model consumes the
+nine observables of Section~\ref{sec:features}. The fourteen span the classifier families
+used across the cited detection literature of Section~\ref{sec:related}: tree ensembles
+and boosting, instance-based classification, kernel methods, a shallow feed-forward
+network, and, among the deep models, the convolutional, recurrent, hybrid and
+attention-based branches of sequence modelling.
+
+A linear-kernel support-vector machine was also trained on this corpus and separates the
+classes far worse than every detector in Table~\ref{tab:oppoint}, so it is excluded as
+uninformative: a detector that does not separate the classes to begin with is not a
+meaningful adversarial-robustness test. The support-vector machine that
+\citet{an2025adversarial} attack instead uses a radial-basis-function kernel; that is the
+kernel trained here, reaching a clean $F_1$ of 0.682, weaker than every other detector
+but well above chance, so it is retained as the fourteenth detector and the SVM family
+\citeauthor{an2025adversarial} attack is represented under the present protocol.
 
 \subsection{Common operating point}
 \label{sec:oppoint}
