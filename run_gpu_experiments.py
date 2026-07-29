@@ -4,7 +4,7 @@ GPU experiment pipeline for Paper 1 - the long unattended runs.
 Runs the two remaining heavy experiments end to end so they can go overnight on a
 Kaggle GPU (or locally):
 
-  23_generalization.py  full cross-scenario + leave-PRN, all 13 models  -> generalization.csv
+  23_generalization.py  full cross-scenario + leave-PRN, all 14 models  -> generalization.csv
   24_defense.py         diagnostic adversarial-training baseline (6 DL)  -> defense_baseline.csv
 
 It SMOKE-TESTS each stage first (a 1-fold / few-epoch / subsampled pass) so an error
