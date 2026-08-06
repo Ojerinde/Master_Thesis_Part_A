@@ -10,9 +10,7 @@ the observables a real integrity monitor would compute: the carrier-to-noise den
 ratio $C/N_0$, its running mean, the noise-floor estimate, the Doppler and
 carrier-frequency estimates, the prompt in-phase and quadrature correlator
 accumulators $I_P$ and $Q_P$, the delay-lock discriminator and the phase- and
-frequency-lock indicators. Processing raw samples through a published receiver, rather
-than a hand-built feature extractor, yields the observables a fielded receiver would
-actually see and makes the feature generation reproducible. Figure~\ref{fig:pipeline}
+frequency-lock indicators. Figure~\ref{fig:pipeline}
 shows the end-to-end flow, from the raw signal through the tracking loops and observables
 to the detectors and the attack suite. The receiver acquires the
 authentic satellites cleanly: Figure~\ref{fig:acq} shows the acquisition metric
@@ -64,7 +62,7 @@ only during pull-in and is absent in steady-state tracking. We therefore restric
 detector to the nine physically independent observables, representing the correlator
 state by the raw accumulators $I_P$ and $Q_P$ rather than their derived power and
 phase. The one remaining soft coupling, $C/N_0$ as a function of the correlator power,
-is enforced during attack generation (Section~\ref{sec:method}). A feature-space attack
+is enforced during attack generation (Section~\ref{sec:enforcer}). A feature-space attack
 that moved a derived observable independently of its parents would correspond to a
 signal no transmitter could produce, so this restriction is what keeps the reported
 attacks physically meaningful.

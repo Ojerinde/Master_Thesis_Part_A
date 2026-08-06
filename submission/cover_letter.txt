@@ -1,0 +1,52 @@
+Dear Editor,
+
+We would like to submit our manuscript, "Adversarial Vulnerability of Machine-Learning
+GNSS Spoofing Detectors to Physically Realizable Attacks," for consideration as an
+Original Article in Satellite Navigation.
+
+Why this manuscript belongs in Satellite Navigation
+
+Machine-learning spoofing detectors are moving from research prototypes toward
+integration in receivers, but their behaviour under a deliberate, adaptive adversary
+has not been established the way their clean-data accuracy has. Our manuscript
+reports a model-fair adversarial evaluation of fourteen detectors, spanning classical
+and deep architectures, on receiver observables generated from the Texas Spoofing
+Test Battery by an open software-defined receiver. Every detector is placed at a
+common operating point and attacked with one shared suite, including a gradient-free
+decision-based attack that gives non-differentiable detectors a fair test and a
+signal-validity enforcer that keeps every reported attack physically realizable. The
+central finding is that architecture choice trades detection utility against
+robustness rather than providing a security guarantee: no family is robust under a
+matched attack, and the apparent robustness some detectors show under transfer
+attacks is gradient masking rather than a real property. This speaks directly to
+resilient PNT, a core scope of the journal, and to the growing literature on
+learning-based GNSS spoofing detection that the journal has published.
+
+Policy issues
+
+We are not aware of any policy issues relevant to this submission.
+
+Competing interests
+
+The authors declare that they have no competing interests.
+
+Prior publication and authorship
+
+This manuscript has not been published and is not under consideration for
+publication elsewhere, in whole or in part. All authors have seen and approved the
+manuscript in its current form and agree to its submission to Satellite Navigation.
+
+Special issue
+
+This submission is not intended for a special issue.
+
+Thank you for considering our manuscript. We look forward to your response.
+
+Sincerely,
+
+Wasiu Akande Ahmed and Joel Segun Ojerinde (corresponding authors)
+On behalf of all authors
+Regional Centre for Space Science and Technology Education in Asia and the Pacific
+(RCSSTEAP), Hangzhou International Innovation Institute, Beihang University,
+Hangzhou 311115, China
+ahmedwasiu24@buaa.edu.cn; joelojerinde@buaa.edu.cn

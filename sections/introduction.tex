@@ -77,8 +77,9 @@ recall 0.95, and attack them with one shared suite (Figure~\ref{fig:pipeline}). 
 attacks and multi-surrogate transfer with three GNSS domain manipulations and a
 gradient-free decision-based attack that provides a matched upper bound on the
 vulnerability of the non-differentiable models. A signal-validity enforcer projects
-every adversarial example onto the physically realizable set and holds the
-carrier-to-noise ratio consistent with the correlator power that would produce it.
+every adversarial example onto the band that keeps the carrier-to-noise ratio
+consistent with the correlator power that would produce it, the realizability
+condition detailed in Section~\ref{sec:enforcer}.
 
 \begin{figure*}[t]
 \centering
@@ -122,8 +123,8 @@ The contributions of this paper are the following.
   matched attack, that classical robustness under transfer is gradient masking, and
   that cross-scenario detection collapses on an unseen attack. Because this holds for
   every architecture evaluated, the study motivates engineering robustness into the
-  detector rather than selecting it by architecture, and frames the design of such a
-  defence as the central direction for future work rather than a result delivered here.
+  detector instead of selecting it by architecture, and frames the design of such a
+  defence as the central direction for future work, not a result delivered here.
 \end{itemize}
 
 The remainder of the paper is organized as follows. Section~\ref{sec:related} reviews

@@ -53,17 +53,18 @@ The finding that matters most for how these detectors are evaluated is that
 non-differentiability is not robustness. A tree ensemble or a nearest-neighbour
 classifier denies a gradient attack a useful gradient, so its survival under such an
 attack carries no information about its robustness. Measured through the decision
-boundary instead, the ordering reverses: the boosted-tree detectors are the
+boundary instead, the ordering reverses: the tree-based detectors are the
 easiest to evade, and the gradient-boosting model, second only to the random forest on
 clean data, is the most fragile of all. Any future evaluation of a GNSS spoofing detector that claims
 robustness for a non-differentiable model should include a gradient-free attack for
 this reason.
 
-The physical-realizability constraint is what makes the threat credible rather than a
-feature-space artifact. Because every adversarial example is projected onto the
-attainable receiver states and the coupling between reported signal quality and
-correlator power is enforced, each reported attack corresponds to a signal a spoofer
-could transmit. Within that constraint the GNSS domain attacks are almost harmless,
+The realizability constraint is what keeps the threat credible rather than a
+feature-space artifact: every adversarial example is projected onto the band set by
+the coupling between reported signal quality and correlator power
+(Section~\ref{sec:enforcer}), so no reported attack raises the signal quality without
+also supplying the correlator power that would produce it. Within that constraint the
+GNSS domain attacks are almost harmless,
 while the learned perturbations succeed, which locates the threat in the learned attack
 rather than in simple signal shaping and shows that the realizability constraint does
 not by itself protect the detector.

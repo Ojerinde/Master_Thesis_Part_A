@@ -88,16 +88,16 @@ The evaluation reported here addresses that question directly. It covers fourtee
 detectors spanning both families, places them at a shared operating point, applies one
 attack suite to all of them including a gradient-free decision-based attack that
 measures vulnerability without relying on gradients, and projects every adversarial
-example onto the physically realizable set so that each reported attack corresponds to
-a signal a spoofer could transmit. Table~\ref{tab:vsan} makes the scope difference
-against that prior study explicit.
+example onto the band set by the coupling between reported signal quality and
+correlator power, the realizability condition detailed in Section~\ref{sec:enforcer}.
+Table~\ref{tab:vsan} makes the scope difference against that prior study explicit.
 
 \begin{table}[tb]
 \centering
 \caption{Scope of this study against the one directly comparable prior evasion study of
 GNSS spoofing detectors.}
 \label{tab:vsan}
-\small
+\footnotesize
 \begin{tabular}{@{}lll@{}}
 \toprule
  & \citet{an2025adversarial} & This work \\

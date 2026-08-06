@@ -8,18 +8,18 @@ We use the static family of the Texas Spoofing Test Battery
 \citep{humphreys2012texbat}: the clean static recording as the authentic baseline and
 the ds2, ds3 and ds7 spoofing scenarios. ds2 is an overpowered time push at about
 10 dB advantage, ds3 is a matched-power time push at about 1.3 dB, and ds7 is a
-power-matched, carrier-phase-aligned takeover \citep{humphreys2016texbatds78}. The two
-dynamic scenarios are excluded so that a static-versus-dynamic motion difference cannot
-confound the comparison. Each recording is processed by the receiver of
+power-matched, carrier-phase-aligned takeover \citep{humphreys2016texbatds78}. The
+benchmark's moving-platform scenarios, ds5 and ds6, fall outside the stationary-receiver
+scope of this study. Each recording is processed by the receiver of
 Section~\ref{sec:signal} into per-epoch observables.
 
-Labelling is done within each recording rather than by recording identity. In a
+Labels are assigned within each recording rather than by whole-recording identity: in a
 spoofed recording the epochs before the documented takeover carry the authentic label
 and the epochs after the pull-off carry the spoofed label, with the transition band
 discarded; the clean static recording is authentic throughout. Drawing both classes
 from the same recordings removes the recording-identity shortcut, under which a
-detector could separate the classes by learning which file an epoch came from rather
-than the spoofing signature. The resulting corpus holds about 209{,}000 labelled
+detector could separate the classes by learning which recording an epoch came from
+rather than the spoofing signature. The resulting corpus holds about 209{,}000 labelled
 epochs, close to balanced (about 51\% spoofed), so no resampling is applied.
 
 Train, validation and test partitions are formed by a leakage-free block-temporal
@@ -49,14 +49,13 @@ and boosting, instance-based classification, kernel methods, a shallow feed-forw
 network, and, among the deep models, the convolutional, recurrent, hybrid and
 attention-based branches of sequence modelling.
 
-A linear-kernel support-vector machine was also trained on this corpus and separates the
-classes far worse than every detector in Table~\ref{tab:oppoint}, so it is excluded as
-uninformative: a detector that does not separate the classes to begin with is not a
-meaningful adversarial-robustness test. The support-vector machine that
-\citet{an2025adversarial} attack instead uses a radial-basis-function kernel; that is the
-kernel trained here, reaching a clean $F_1$ of 0.682, weaker than every other detector
-but well above chance, so it is retained as the fourteenth detector and the SVM family
-\citeauthor{an2025adversarial} attack is represented under the present protocol.
+The support-vector machine uses a radial-basis-function kernel, matching the model
+family \citet{an2025adversarial} attack, so their SVM configuration is represented
+under the present protocol. Tuned by the same five-fold grid search as every other
+classical model, it reaches a clean $F_1$ of 0.682, the weakest of the fourteen
+detectors. A linear-kernel variant, trained on the same corpus for comparison,
+separates the classes far worse and is not carried forward: a detector that does not
+separate the classes to begin with is not a meaningful adversarial-robustness test.
 
 \subsection{Common operating point}
 \label{sec:oppoint}
@@ -143,21 +142,21 @@ Figure~\ref{fig:realizability} illustrates the effect. An attack that raises the
 $C/N_0$ without supplying the correlator power that would produce it leaves the attainable
 band, and the enforcer projects it back onto that band.
 
-The enforcer is a necessary, not a sufficient, condition for full physical realizability,
-and its scope is a deliberate boundary of the threat model. It enforces the per-epoch
-amplitude-to-power coupling and the conservative per-observable bounds; it does not model
-carrier-phase or code-phase continuity, Doppler and clock dynamics, tracking-loop (PLL and
-DLL) bandwidth and transient behaviour, automatic-gain-control response, or satellite
-geometry, and, acting per epoch, it does not constrain the epoch-to-epoch smoothness of the
-amplitude, phase and code trajectories. Each of these is an additional constraint a
-transmitted signal must also satisfy, so an attack this study counts as successful under
-the amplitude-power constraint could still be rejected by a temporally aware receiver that
-checks carrier-tracking-loop consistency across epochs. The reported attacks are therefore
-physically constrained on the coupling most relevant to a single-epoch feature-space
-attack rather than certified realizable in full; enforcing the remaining constraints, in
-particular a temporal-smoothness constraint on the amplitude, phase and code trajectories,
-is a natural extension left to future work and would only tighten, not loosen, the
-attacker's feasible set.
+By construction the enforcer acts per epoch: it fixes the amplitude-to-power coupling
+and the conservative per-observable bounds at the instant an observation is reported,
+and it leaves the relation between successive epochs unconstrained. A transmitted
+signal must also satisfy constraints the per-epoch view does not see, among them
+carrier-phase and code-phase continuity, Doppler and clock dynamics, tracking-loop
+(PLL and DLL) bandwidth and transient behaviour, automatic-gain-control response,
+satellite geometry, and the epoch-to-epoch smoothness of the amplitude, phase and code
+trajectories. An attack that respects the amplitude-power coupling can still fail one
+of these, so a temporally aware receiver that checks carrier-tracking-loop consistency
+across epochs could reject a signal the present enforcer admits. The reported attacks
+are accordingly bounded by the single-epoch coupling that most directly governs a
+feature-space perturbation, not certified against every constraint a real signal must
+meet; adding the remaining constraints, particularly the temporal smoothness of the
+amplitude, phase and code trajectories across epochs, would tighten rather than loosen
+the attacker's feasible set, and is the natural next layer of the threat model.
 
 \begin{figure}[tb]
 \centering

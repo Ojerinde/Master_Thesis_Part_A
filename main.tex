@@ -41,11 +41,11 @@
 
 \title[Adversarial Vulnerability of GNSS Spoofing Detectors]{Adversarial Vulnerability of Machine-Learning GNSS Spoofing Detectors to Physically Realizable Attacks}
 
-\author[1]{\fnm{Joel Segun} \sur{Ojerinde}}
+\author*[1]{\fnm{Joel Segun} \sur{Ojerinde}}\email{joelojerinde@buaa.edu.cn}
 \author*[1]{\fnm{Wasiu Akande} \sur{Ahmed}}\email{ahmedwasiu24@buaa.edu.cn}
 \author[2]{\fnm{Akinyinka Olukunle} \sur{Akande}}
 
-\affil*[1]{\orgdiv{Regional Centre for Space Science and Technology Education in Asia and the Pacific (RCSSTEAP), Beihang Hangzhou International Innovation Institute}, \orgname{Beihang University}, \orgaddress{\city{Hangzhou}, \state{Zhejiang}, \country{China}}}
+\affil*[1]{\orgdiv{Regional Centre for Space Science and Technology Education in Asia and the Pacific (RCSSTEAP), Hangzhou International Innovation Institute}, \orgname{Beihang University}, \orgaddress{\city{Hangzhou 311115}, \country{China}}}
 
 \affil[2]{\orgname{Federal University of Technology}, \orgaddress{\city{Owerri}, \country{Nigeria}}}
 
@@ -63,7 +63,7 @@ signal-validity enforcer onto the band set by the coupling between reported sign
 quality and correlator power, a necessary condition for realizability that no reported
 attack violates. On clean data no family dominates, with $F_1$ between
 0.68 and 0.83. Under the decision-based attack every detector, differentiable or not,
-is driven to a worst-case spoof recall near zero. The boosted-tree detectors require
+is driven to a worst-case spoof recall near zero. The tree-based detectors require
 the smallest perturbation to evade, led by a model that is second only to the best
 detector on clean data, so resistance to a gradient attack does not by itself indicate
 robustness. The lone outlier, a support-vector machine, needs roughly six times the
@@ -75,8 +75,8 @@ in the learned attack rather than in simple signal shaping. Cross-scenario evalu
 recall falling to a mean of 0.26 on the unseen overpowered scenario, and cross-satellite
 failure is specific to a detector and a satellite rather than to a family. Architecture
 choice therefore
-trades detection utility against robustness rather than providing a security
-guarantee, and robustness has to be engineered rather than assumed.}
+trades detection utility against robustness instead of providing a security
+guarantee, and robustness has to be engineered, not assumed.}
 
 \keywords{GNSS spoofing, Adversarial robustness, Machine learning, Software-defined
 receiver, Resilient PNT, Decision-based attack}
@@ -94,15 +94,65 @@ receiver, Resilient PNT, Decision-based attack}
 
 \backmatter
 
-\bmhead{Data and code availability}
-The derived receiver-observable corpus and the evaluation and figure-generation code are
-available from the corresponding author on reasonable request. The raw Texas Spoofing
-Test Battery recordings are distributed by the University of Texas at Austin
-Radionavigation Laboratory, and the FGI-GSRx software-defined receiver is released under
-the GPLv3 licence.
+\section*{List of abbreviations}
+\begin{description}
+\item[AUC] area under the curve
+\item[CNN] convolutional neural network
+\item[DLL] delay-lock loop
+\item[DLSA] data location shift attack
+\item[FAR] false-alarm rate
+\item[FGI] Finnish Geospatial Research Institute
+\item[FGSM] fast gradient sign method
+\item[GNSS] Global Navigation Satellite System
+\item[GPS] Global Positioning System
+\item[KNN] $k$-nearest neighbour
+\item[LSTM] long short-term memory
+\item[MLP] multilayer perceptron
+\item[PGD] projected gradient descent
+\item[PLL] phase-lock loop
+\item[PNT] positioning, navigation and timing
+\item[PRN] pseudo-random noise
+\item[ROC] receiver operating characteristic
+\item[SNA] similarity noise attack
+\item[SVM] support-vector machine
+\item[TCN] temporal convolutional network
+\item[TEXBAT] Texas Spoofing Test Battery
+\item[TPA] temporal pattern attack
+\end{description}
+
+\section*{Declarations}
+
+\bmhead{Ethics approval and consent to participate}
+Not applicable. This study involves no human participants, human data or animal
+subjects; it processes recorded radio-frequency signals from a public spoofing-attack
+test benchmark.
+
+\bmhead{Consent for publication}
+Not applicable.
+
+\bmhead{Availability of data and materials}
+The derived receiver-observable corpus and the evaluation code are available from the
+corresponding author on reasonable request. The raw Texas Spoofing Test Battery
+recordings are distributed by the University of Texas at Austin Radionavigation
+Laboratory, and the FGI-GSRx software-defined receiver is released under the GPLv3
+licence.
 
 \bmhead{Competing interests}
-The authors declare no competing interests.
+The authors declare that they have no competing interests.
+
+\bmhead{Funding}
+The authors received no specific funding for this work.
+
+\bmhead{Authors' contributions}
+J.S.O. conceived the study, developed the methodology, implemented the experiments,
+analysed the results and wrote the manuscript. W.A.A. supervised the work and
+reviewed the manuscript. A.O.A. reviewed the manuscript. All authors read and
+approved the final manuscript.
+
+\bmhead{Acknowledgements}
+We thank the University of Texas at Austin Radionavigation Laboratory for the Texas
+Spoofing Test Battery recordings and the Finnish Geospatial Research Institute for
+the open-source FGI-GSRx software-defined receiver used in this study.
 
 \bibliography{references}
 

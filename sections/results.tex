@@ -21,7 +21,7 @@ The false-alarm rate at the recall floor is high, from 0.34 to 0.96, reflecting 
 the difficulty of the corpus once the recording-identity shortcut is removed and, at
 the upper end, the weak discriminative power of the least separable detector, the
 support-vector machine (Section~\ref{sec:detectors}). Reporting the second operating
-point makes this explicit rather than hidden. When a clean-validation false-alarm
+point surfaces this directly. When a clean-validation false-alarm
 ceiling of 0.05 is imposed instead, two of the tree-based detectors, XGBoost and the
 decision tree, cannot reach it at any threshold, and the gradient-boosting model that
 meets it on validation does not carry the low false-alarm rate to the test set.
@@ -114,8 +114,9 @@ rather than by family. Figure~\ref{fig:generalization}(a) reports cross-scenario
 recall when a spoofing scenario is held out of training. Averaged over the three
 held-out scenarios the mean recall is 0.53 for the classical detectors and 0.49 for the
 deep detectors, with a standard deviation across the held-out scenarios of 0.20 and 0.30
-respectively, and the overpowered ds2 scenario is the worst case for every detector,
-with the random forest falling to a recall of 0.08. This
+respectively, and the overpowered ds2 scenario is the worst case for every detector:
+the mean recall across all fourteen detectors falls to 0.26 on ds2 alone, and the
+random forest falls furthest, to 0.08. This
 reproduces, on an independent receiver pipeline, the collapse toward chance that
 physics-constrained work has reported for learned spoofing detectors on unseen
 scenarios \citep{song2026generalized}. The behaviour is scenario-dependent rather than

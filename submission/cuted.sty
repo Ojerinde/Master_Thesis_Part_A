@@ -1,0 +1,6 @@
+%% Minimal cuted.sty - provides strip environment for sn-jnl.cls
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{cuted}[2024/12/01 v1.0 Minimal strip for sn-jnl]
+\newdimen\stripsep
+\stripsep=0pt
+\newenvironment{strip}{\vskip\stripsep}{\vskip\stripsep}
