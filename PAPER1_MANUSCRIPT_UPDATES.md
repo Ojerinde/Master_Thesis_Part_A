@@ -2,7 +2,9 @@
 
 **Purpose:** the authoritative record of every methodology decision + change made
 during the FGI-GSRx rebuild, to fold into the manuscript. **Read this before
-editing the `.tex`.** Companion to `FIGURE_PLAN.md`. Branch: `paper1-experiment`.
+editing the `.tex`.** Companion to `FIGURE_PLAN.md`. Branch: `main` (renamed
+from `paper1-experiment` 2026-08-18; the manuscript itself now lives on
+`paper1-manuscript`, in the `papers/paper1-satnav` local checkout).
 
 - Manuscript source (to be retargeted from GPS Solutions -> Satellite Navigation):
   `D:\BEIHANG UNIVERSITY\Research\manuscript\GPS_Solutions_sn\manuscript.tex`

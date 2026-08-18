@@ -3,7 +3,8 @@
 Adversarial robustness analysis of classical and deep learning GNSS spoofing
 detectors on receiver observables reprocessed from TEXBAT through the FGI-GSRx
 software-defined receiver. Backs the Paper-1 manuscript (`papers/paper1-satnav`
-in the workspace root, `paper1-experiment` branch of this repo).
+in the workspace root, `paper1-manuscript` branch of this repo; this code is
+`main`, corrected 2026-08-18 to match Part_B's branch layout).
 
 ## Quick Start
 

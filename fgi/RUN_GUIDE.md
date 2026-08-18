@@ -1,6 +1,6 @@
 # Paper 1 — TEXBAT Tracking and Feature Export (Run Guide)
 
-Branch: `paper1-experiment`. Corpus is **static only**: cleanStatic (authentic) + ds2 + ds3 + ds7, with ds8 optional. ds5/ds6 (dynamic) are excluded.
+Branch: `main` (renamed from `paper1-experiment` 2026-08-18). Corpus is **static only**: cleanStatic (authentic) + ds2 + ds3 + ds7, with ds8 optional. ds5/ds6 (dynamic) are excluded.
 
 Two environments are used:
 - **MATLAB** (with FGI-GSRx) for tracking and feature export.

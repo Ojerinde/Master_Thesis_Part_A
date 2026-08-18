@@ -14,11 +14,14 @@ Three Kaggle notebooks, all driven by the same corpus dataset
 - `kaggle_generalization.ipynb` — experiment 23, independent of both, can run
   before/after/in parallel with either.
 
-Repo: **https://github.com/Ojerinde/Master_Thesis_Part_A** (`paper1-experiment`
-branch). Note this repo also holds the manuscript itself, on `main` —
-`paper1-experiment` is a separate branch and pushing to it never touches
-`main`. The old `Master_Research` repo referenced in earlier versions of this
-file was deleted; this is the current one.
+Repo: **https://github.com/Ojerinde/Master_Thesis_Part_A** (`main` branch,
+this experiment code). Note this repo also holds the manuscript, on
+`paper1-manuscript` — a separate branch, so pushing to `main` never touches
+it. (Corrected 2026-08-18: `main` and the branch this code used to live on,
+`paper1-experiment`, were swapped so this repo matches Part_B's structure;
+`paper1-experiment` no longer exists.) The old `Master_Research` repo
+referenced in earlier versions of this file was deleted; this is the current
+one.
 
 **This repo is private.** All three notebooks' clone cell reads a `GITHUB_TOKEN`
 from Kaggle Secrets (Add-ons -> Secrets in the notebook's right panel) rather
@@ -140,7 +143,7 @@ If that changes, state it in Methods.
 1) Push the code (data is gitignored, so only code travels):
        git add -A
        git commit -m "..."
-       git push origin paper1-experiment
+       git push origin main
    The 316 GB of raw recordings (data/raw/*) and the 38 MB corpus
    (data/processed/*) are gitignored and will NOT be pushed. Confirm with
    `git status` that no .bin/.csv is staged.
