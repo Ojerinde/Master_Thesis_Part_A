@@ -1,116 +1,136 @@
-\section{Receiver Signal Model and Observable Generation}
+\section{Receiver Observables and Signal Tracking}
 \label{sec:signal}
 
-We process the raw Texas Spoofing Test Battery recordings with the FGI-GSRx
-software-defined receiver \citep{fgigsrx}, a published open-source receiver, rather
-than a bespoke pipeline. Each recording is a 25 Msps complex GPS L1 C/A stream. The
-receiver acquires each satellite and tracks it through standard delay-lock and
-phase-lock loops. At every integration epoch and for each tracked satellite it emits
-the observables a real integrity monitor would compute: the carrier-to-noise density
-ratio $C/N_0$, its running mean, the noise-floor estimate, the Doppler and
-carrier-frequency estimates, the prompt in-phase and quadrature correlator
-accumulators $I_P$ and $Q_P$, the delay-lock discriminator and the phase- and
-frequency-lock indicators. Figure~\ref{fig:pipeline}
-shows the end-to-end flow, from the raw signal through the tracking loops and observables
-to the detectors and the attack suite. The receiver acquires the
-authentic satellites cleanly: Figure~\ref{fig:acq} shows the acquisition metric
-separating the acquired satellites from the noise floor and a single sharp correlation
-peak for the strongest satellite.
+The detectors evaluated here operate on observables a receiver computes while tracking a
+signal. This section specifies the processing that produces them, the observable set
+retained, the criterion by which that set was selected, and the labelling procedure, so
+that the effect of a transmitted attack on each quantity can be traced through the chain.
 
-\begin{figure}[tb]
-\centering
-\includegraphics[width=\linewidth]{figures/fig04_receiver_validation.pdf}
-\caption{Receiver validation on the clean static recording. (a) Acquisition metric per
-satellite; ten satellites are acquired above the threshold and the rest fall in the
-noise floor. (b) The code-phase correlation for the strongest satellite shows a single
-sharp acquisition peak.}
-\label{fig:acq}
-\end{figure}
+\subsection{Receiver processing}
 
-A spoofer controls the transmitted signal amplitude $A_s(t)$, its carrier phase
-$\theta_s(t)$ and its code phase $\tau_s(t)$. These map deterministically to the
-receiver observables. Amplitude sets the prompt power $I_P^2+Q_P^2$ and hence $C/N_0$,
-carrier phase sets the split between $I_P$ and $Q_P$, and code phase sets the
-delay-lock discriminator and the pseudorange. The ds7 scenario is a concrete instance.
-It is a power-matched, carrier-phase-aligned takeover in which $\theta_s$ is ramped so
-that the composite in-phase and quadrature amplitude stays near constant while the
-tracking loops are captured, after which the relative code phase drifts and induces a
-growing clock offset \citep{humphreys2016texbatds78}. Figure~\ref{fig:signature} shows
-this signature on one satellite. After the takeover the $C/N_0$ of the spoofed
-recording settles about two decibels below the authentic reference, while the Doppler
-stays matched and the delay-lock discriminator stays near zero, which is the stealthy
-behaviour a data-driven detector is asked to catch.
+A GPS L1 C/A satellite transmits a carrier modulated by a pseudorandom spreading code of
+1023 chips repeating every millisecond, and by navigation data at 50 bits per second. The
+code is public and distinct for each satellite, which is what permits a counterfeit to be
+generated at all.
 
-A multi-correlator view of the same takeover shows how little it disturbs the shape of
-the correlation function. Figure~\ref{fig:sqm} plots the correlation magnitude of PRN 23
-at seventeen taps across plus or minus two chips, for an authentic interval and a
-spoofed interval. The peak stays at zero offset and the two functions almost coincide,
-departing by at most about two percent of the peak. A test on correlation shape alone
-therefore has little to detect here, which is consistent with the power-matched,
-carrier-phase-aligned design of the scenario and is part of why a detector that combines
-the correlator state with the other observables is preferred.
+Reception proceeds in two stages. In acquisition the receiver searches jointly over code
+phase and carrier frequency until it finds the alignment at which its locally generated
+replica correlates strongly with the incoming signal. In tracking it maintains that
+alignment as the satellite geometry and the receiver clock evolve. Tracking is implemented
+by three feedback loops operating concurrently. The delay locked loop maintains code
+alignment by correlating the incoming signal against early, prompt and late replicas and
+steering so that the early and late correlations remain equal, which holds the prompt
+replica on the correlation peak. The phase locked loop maintains carrier phase alignment.
+The frequency locked loop performs the equivalent function for carrier frequency and is
+more tolerant of low signal to noise ratio, so it assists when phase lock is marginal.
 
-\subsection{Physically independent observables}
+The loops produce a set of quantities at each integration interval. These quantities are
+the detector inputs used throughout this study. They are not selected for convenience of
+classification: they are what the receiver computes in order to function, and a detector
+operating inside a receiver would have access to precisely this set.
+
+\subsection{Observable measurements}
 \label{sec:features}
 
-Several receiver observables are algebraic functions of others, so perturbing a
-derived quantity on its own produces a receiver state that cannot physically occur. On
-our corpus the carrier-frequency column equals the Doppler column exactly, the prompt
-power equals $I_P^2+Q_P^2$ exactly, and the prompt phase equals
-$\operatorname{atan2}(Q_P,I_P)$ exactly; the frequency-lock filter output is defined
-only during pull-in and is absent in steady-state tracking. We therefore restrict every
-detector to the nine physically independent observables, representing the correlator
-state by the raw accumulators $I_P$ and $Q_P$ rather than their derived power and
-phase. The one remaining soft coupling, $C/N_0$ as a function of the correlator power,
-is enforced during attack generation (Section~\ref{sec:enforcer}). A feature-space attack
-that moved a derived observable independently of its parents would correspond to a
-signal no transmitter could produce, so this restriction is what keeps the reported
-attacks physically meaningful.
+Table~\ref{tab:features} lists the nine observables, exported once per epoch for each
+tracked satellite.
 
-Figure~\ref{fig:featdist} shows the distribution of the observables for genuine and
-spoofed epochs pooled over the corpus. The separation is carried mainly by $C/N_0$ and
-the correlator accumulators, while the Doppler is clustered by satellite and is weakly
-discriminative on its own, which is consistent with the stealthy, power-matched nature
-of the strongest scenarios. Pooled $C/N_0$ is slightly higher for genuine than for
-spoofed epochs, which at first looks opposite to the power advantage a spoofer needs to
-capture the tracking loops. The two scenarios with the most spoofed epochs, ds3 and
-ds7, are deliberately power-matched rather than overpowered, and ds7 settles below the
-authentic level after capture (Section~\ref{sec:signal}); only the overpowered ds2
-scenario shows spoofed $C/N_0$ above genuine, and it contributes fewer epochs. The
-pooled direction is therefore a property of the scenario mix, dominated by the stealthy
-scenarios, rather than a general rule that spoofing raises $C/N_0$.
-
-\begin{figure}[tb]
+\begin{table}[t]
 \centering
-\includegraphics[width=\linewidth]{figures/fig02_signature_timehistory_prn23.pdf}
-\caption{Spoofing-signature time history for one satellite (PRN 23): the authentic clean
-static recording against the ds7 spoofed recording. After the takeover the
-carrier-to-noise ratio settles about two decibels below the authentic reference, while
-the Doppler stays matched and the delay-lock discriminator stays near zero, the stealthy
-signature of the power-matched, carrier-phase-aligned takeover. The shaded 110 to 150 s
-transition band is excluded from the corpus, so only the authentic recording is drawn
-across it.}
-\label{fig:signature}
-\end{figure}
+\caption{The nine measurements each detector reads, per satellite per epoch.}
+\label{tab:features}
+\begin{tabular}{@{}llp{5.1cm}@{}}
+\toprule
+Measurement & Units & What it is \\
+\midrule
+$C/N_0$              & dB-Hz  & Received signal strength relative to the noise density \\
+Mean $C/N_0$         & dB-Hz  & The same, averaged over the preceding second \\
+Noise estimate       & --     & Correlator output away from the peak, used as the noise
+                                reference \\
+Doppler              & Hz     & Frequency offset of the carrier from its nominal value \\
+Prompt in phase      & --     & Correlation with the on peak code copy, in phase
+                                component \\
+Prompt quadrature    & --     & The same, quadrature component \\
+Delay lock discriminator & chips & Difference between the early and late correlations,
+                                the code tracking error \\
+Phase lock indicator & --     & How well the phase locked loop is holding \\
+Frequency lock indicator & -- & How well the frequency locked loop is holding \\
+\bottomrule
+\end{tabular}
+\end{table}
 
-\begin{figure}[tb]
-\centering
-\includegraphics[width=\linewidth]{figures/fig07_sqm.pdf}
-\caption{Multi-correlator correlation function of PRN 23 under ds7, at seventeen taps
-across plus or minus two chips. (a) Correlation magnitude for an authentic interval
-($t<110$ s) and a spoofed interval ($t>150$ s), each normalised to its peak; the two
-nearly coincide. (b) The spoofed minus authentic residual: the peak stays at zero offset
-while the spoofer raises the off-peak correlator floor and slightly suppresses the late
-shoulder, by at most about two percent of the peak. The small distortion is consistent
-with the power-matched, carrier-phase-aligned design of the takeover.}
-\label{fig:sqm}
-\end{figure}
+The set spans the three aspects of tracking that a spoofing attack perturbs. Received
+power is represented by the first three entries, which respond to the counterfeit's
+transmitted power relative to the authentic signal. Carrier behaviour is represented by
+the Doppler, the two prompt correlator components and the phase and frequency lock
+indicators, which respond to the counterfeit's carrier frequency and phase. Code behaviour
+is represented by the delay lock discriminator, which responds to the displacement between
+the counterfeit code and the authentic code and therefore to the pull-off rate.
+Figure~\ref{fig:featdist} shows the marginal distribution of each observable under the two
+classes; the classes overlap in every single observable, which is why a learned detector
+that combines them can outperform any univariate threshold.
 
-\begin{figure}[tb]
+% Figure source: figures_src/fig_legacy.py
+\begin{figure*}[t]
 \centering
-\includegraphics[width=\linewidth]{figures/fig03_feature_distributions.pdf}
-\caption{Distribution of the receiver observables for genuine and spoofed epochs,
-pooled over the corpus. The class separation is carried mainly by the carrier-to-noise
-ratio and the correlator accumulators.}
+\includegraphics[width=\textwidth]{figures/fig03_feature_distributions.pdf}
+\caption{Distribution of each of the nine measurements for authentic and for spoofed epochs. The classes overlap in every measurement, which is why a detector combines them instead of thresholding any one.}
 \label{fig:featdist}
-\end{figure}
+\end{figure*}
+
+\subsection{Selection of the observable set}
+
+A software receiver exposes more quantities than the nine retained, and several of the
+additional ones are exact deterministic functions of quantities already in the set. The
+prompt correlator power is the sum of squares of the two prompt components; the prompt
+phase is the arctangent of their ratio; the carrier frequency is the Doppler displaced by
+a fixed nominal value.
+
+Such derived quantities are excluded, for two reasons. They contribute no information
+beyond their parents, so their inclusion cannot improve an optimal classifier. More
+importantly, their presence would admit an evaluation artefact: a perturbation that
+displaced a derived quantity without correspondingly displacing its parents specifies a
+receiver state that no incident waveform can produce, and any attack exploiting such a
+displacement would be an artefact of the feature representation. The nine retained
+observables are functionally independent, in the sense that none is an exact function of
+the others, which eliminates that particular failure mode.
+
+Functional independence is a property of the representation and does not by itself
+establish that an arbitrary configuration of the nine is physically attainable, since
+independence among coordinates says nothing about the image of the map from transmitter
+parameters to observables. In the waveform level evaluation the question is not reached,
+because the observables are by construction whatever the receiver computes while tracking
+a transmitted signal. It is reached in the feature space comparison of
+Section~\ref{sec:res_compare}, and is treated there.
+Figure~\ref{fig:timehistory} shows the joint evolution of the observables for one satellite
+across the onset of a recorded attack.
+
+% Figure source: figures_src/fig_legacy.py
+\begin{figure*}[t]
+\centering
+\includegraphics[width=\textwidth]{figures/fig02_signature_timehistory_prn23.pdf}
+\caption{Time history of the measurements for one satellite, PRN 23, across the onset of a recorded attack. The measurements move together as the counterfeit takes over the tracking loops, which is the signature a detector reads.}
+\label{fig:timehistory}
+\end{figure*}
+
+\subsection{Labelling and data partitioning}
+
+Each epoch is labelled according to whether the signal being tracked at that instant was
+authentic or contained a counterfeit, following the documented onset time within each
+recording. Epochs spanning the takeover transient are discarded, because during handover
+the tracked signal is neither fully authentic nor fully under the adversary's control and
+the label would be ambiguous.
+
+Both classes are drawn from within the same recording. This is a deliberate constraint on
+corpus construction. Were authentic epochs taken from one recording and spoofed epochs
+from another, a classifier could attain high apparent accuracy by identifying the
+recording of origin through front end, antenna or clock characteristics, which is not
+spoofing detection and would not transfer to deployment. Drawing both classes from a
+single recording, with a common front end and a common clock, removes that confound.
+
+Training, validation and test partitions are taken as disjoint contiguous blocks in time,
+with a margin discarded at each boundary. Adjacent epochs of the same satellite are
+strongly correlated, since the observables evolve continuously and the integration
+interval is short relative to the dynamics, so a randomised partition would place near
+duplicates of the same observation on both sides of the split and inflate the measured
+accuracy.

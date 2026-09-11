@@ -1,31 +1,40 @@
 \section{Conclusion}
 \label{sec:conclusion}
 
-We reported a model-fair adversarial evaluation of fourteen machine-learning GNSS
-spoofing detectors on receiver observables produced by an open software-defined
-receiver from the Texas Spoofing Test Battery. Every detector was placed at a common
-operating point and attacked by one shared suite that included a gradient-free
-decision-based attack, and every adversarial example was projected onto a band that
-preserves the amplitude-power coupling, a necessary realizability condition that no
-reported attack violates.
+This paper has characterised the behaviour of machine learning detectors of GNSS spoofing
+under attacks that are transmitted signals selected by an adversary. Each attack was
+synthesised as radio samples, summed with authentic recordings from the Texas Spoofing Test
+Battery, passed through a model of the receiver front end and tracked by an open software
+receiver, so that the observables each detector read were produced by receiver processing
+of a transmittable waveform. The generator was validated against a recorded attack whose
+construction is documented in full, and reproduced its observables satellite by satellite.
 
-Four results follow. On clean data no architecture family dominates, with $F_1$ between
-0.68 and 0.83. Under the decision-based attack every detector is driven to a worst-case
-spoof recall near zero, and measured through the decision boundary the tree-based
-detectors are the easiest to evade, led by a model that is second only to the best
-detector on clean data, so resistance to a gradient attack does not by itself indicate
-robustness. The lone outlier, a support-vector machine, needs roughly six times the
-perturbation of the most fragile detector to evade, but only because its operating
-point already calls almost everything spoofed, a robustness-accuracy trade-off rather
-than a property to design for.
-GNSS manipulations bounded to the same realizable budget are almost harmless, so the
-threat is the learned attack rather than naive signal shaping. Cross-scenario and
-cross-satellite generalization fails per detector and per condition, reproducing on an
-independent pipeline the generalization loss reported for learned spoofing detection on
-unseen scenarios.
+Fourteen detectors, eight classical and six deep, were placed at a common operating point
+defined by a recall floor of 0.95 on clean validation data, and evaluated against 126
+transmitter settings satisfying the published conditions for receiver takeover.
 
-Taken together, these results argue that robustness has to be engineered into a GNSS
-spoofing detector rather than assumed from its accuracy or its architecture, and that a
-credible robustness claim requires a gradient-free attack at a common operating point
-against physically realizable perturbations. Building and certifying a detector that
-meets that requirement is the subject of ongoing work.
+Clean detection performance was found to be a poor predictor of resistance, and at the top
+of the ranking the two orderings were close to inverted. The random forest attained the
+highest clean $F_1$ score at 0.833 and the lowest false alarm rate at 0.337, and failed to
+flag 55 of the 126 attacks, flagging 0.1 percent of the spoofed samples of one of them. The
+five detectors that flagged every attack did so while flagging between 46 and 74 percent of
+authentic samples, a regime in which the resistance is not operationally available. Across
+all fourteen detectors, false alarm rates at this operating point ranged from 0.337 to
+0.960.
+
+One evaded attack was propagated through the navigation stage. It drove the receiver clock
+at 48.89 nanoseconds per second against a commanded 48.87, while the detector with the best
+clean performance classified 98.8 percent of its samples as authentic, establishing
+detection failure and navigation domain effect on the same attack and the same recording.
+
+The adversary producing these results had no knowledge of the deployed detector, computed
+no gradient and issued no query, and was further restricted to a single signal, full
+satellite coverage and a stationary victim. Each restriction reduces its capability, so the
+reported failure rates constitute a lower bound.
+
+The broader implication is that detection accuracy measured on a fixed corpus of recorded
+attacks characterises that corpus. A detector intended to withstand an adversary requires
+characterisation against signals the adversary can select and emit, reported jointly with
+the false alarm rate incurred. The library of transmitted attacks constructed here is
+available for that purpose, and extends directly to the evaluation of physics constrained
+and certified detectors.

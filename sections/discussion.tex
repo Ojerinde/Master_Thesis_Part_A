@@ -1,139 +1,138 @@
 \section{Discussion}
 \label{sec:discussion}
 
-The results carry one message for resilient positioning, navigation and timing: a
-machine-learning spoofing detector cannot be assumed robust because it is accurate, and
-its architecture does not decide the question. On clean data no family dominates, and
-under a matched attack every family is defeated. Architecture choice buys a trade-off
-between detection utility and robustness, not a security guarantee. The trade-off is
-direct: Figure~\ref{fig:inversion} ranks the detectors by clean $F_1$ and by the
-perturbation needed to evade them, and the two orderings are close to reversed
-(Spearman $\rho=-0.82$, $p<0.001$, across the fourteen detectors; $\rho=-0.78$
-excluding the support-vector-machine outlier), so the detector that is strongest on
-clean data is among the weakest under attack. The
-support-vector machine is the clearest instance, since it resists the
-decision-based attack more than any other detector yet has the weakest clean $F_1$ and
-the highest false-alarm rate, so its robustness is bought at a utility cost that a
-fielded integrity monitor could not accept. The mechanism is visible at its operating
-point: it labels 98.6\% of spoofed epochs and 96.0\% of genuine epochs as spoofed
-(Table~\ref{tab:oppoint}), so before any attack its decision surface already assigns
-almost everything to the spoofed side; an adversary has to cross more of that surface
-to reach the small region the model still calls genuine, which is exactly what a
-larger measured perturbation reflects. This is a robustness-accuracy trade-off in the
-sense of \citet{tsipras2019robustness} rather than a property to design for: the same
-operating point that inflates the false-alarm rate also inflates the measured
-robustness, so the fragility ranking on its own is not a ranking of which detector an
-operator should prefer. Figure~\ref{fig:tradeoff} places all four
-axes side by side, and no detector scores well on all of them: strength on clean
-detection, on the false-alarm rate, on adversarial robustness and on cross-scenario
-recall are in tension rather than aligned.
+\subsection{Principal findings}
 
-\begin{figure}[tb]
-\centering
-\includegraphics[width=\linewidth]{figures/fig10_rank_inversion.pdf}
-\caption{Detector rank by clean $F_1$ (left) against rank by the median $L_\infty$
-perturbation needed to evade the decision-based attack (right). The two orderings are
-close to reversed: the detectors strongest on clean data are the easiest to evade, and
-the support-vector machine moves from weakest on clean data to hardest to evade.}
-\label{fig:inversion}
-\end{figure}
+Three findings follow from Section~\ref{sec:results}, each obtained against attacks that
+were synthesised as waveforms and tracked through the receiver.
 
-\begin{figure}[tb]
+Clean detection performance does not predict resistance to transmitted attack, and at the
+top of the ranking the two orderings are close to inverted. The random forest attains both
+the highest clean $F_1$ score and the lowest false alarm rate of the fourteen detectors,
+and it is nonetheless evaded by 43.7 percent of the transmitted takeover attacks. This is
+not a marginal effect confined to one model: the four best detectors on clean data occupy
+four of the five worst positions under transmitted attack. Because all fourteen detectors
+are read at the same recall floor, the inversion cannot be attributed to differences in
+threshold placement, and because the attacks were selected without reference to any
+detector, it cannot be attributed to adversarial optimisation against a particular model.
+
+Where resistance does appear, it is purchased with false alarms. Five detectors flag every
+one of the 126 attacks, and those same five flag between 46 and 74 percent of authentic
+samples. A receiver alarming on half of its authentic observations would be
+disabled in service, so this resistance is not operationally available, and the pattern is
+the accuracy against robustness trade of Section~\ref{sec:rw_adversarial} appearing in a
+GNSS setting. Figure~\ref{fig:tradeoff} shows the same point across the full set of
+criteria a deployment decision weighs: no detector dominates on all of them, and the
+orderings induced by different criteria disagree, so no single scalar ranks the set.
+
+% Figure source: figures_src/fig_legacy.py
+\begin{figure}[t]
 \centering
 \includegraphics[width=\linewidth]{figures/fig11_tradeoff_parallel.pdf}
-\caption{Each detector across four axes, normalised so higher is better on every axis:
-clean $F_1$, one minus the false-alarm rate, adversarial robustness and cross-scenario
-recall. No detector scores well on all four. The gradient-boosting model is second only
-to the random forest on clean detection and worst on robustness, and the
-support-vector machine is the reverse: worst on clean detection, best on robustness.}
+\caption{Every detector across the criteria a deployment decision would weigh, each normalised so higher is better. No detector is best on all of them, and the orderings disagree, so a single accuracy figure cannot rank them.}
 \label{fig:tradeoff}
 \end{figure}
 
-The finding that matters most for how these detectors are evaluated is that
-non-differentiability is not robustness. A tree ensemble or a nearest-neighbour
-classifier denies a gradient attack a useful gradient, so its survival under such an
-attack carries no information about its robustness. Measured through the decision
-boundary instead, the ordering reverses: the tree-based detectors are the
-easiest to evade, and the gradient-boosting model, second only to the random forest on
-clean data, is the most fragile of all. Any future evaluation of a GNSS spoofing detector that claims
-robustness for a non-differentiable model should include a gradient-free attack for
-this reason.
+A missed detection is consequential rather than benign. The attack propagated through the
+navigation stage drove the receiver clock at the rate the transmitter was configured to
+impose, to within 0.05 percent, while the detector with the best clean performance
+classified 98.8 percent of its samples as authentic. Detection failure and navigation
+domain effect were measured on the same attack and the same recording, so the two are not
+independent observations juxtaposed after the fact.
 
-The realizability constraint is what keeps the threat credible rather than a
-feature-space artifact: every adversarial example is projected onto the band set by
-the coupling between reported signal quality and correlator power
-(Section~\ref{sec:enforcer}), so no reported attack raises the signal quality without
-also supplying the correlator power that would produce it. Within that constraint the
-GNSS domain attacks are almost harmless,
-while the learned perturbations succeed, which locates the threat in the learned attack
-rather than in simple signal shaping and shows that the realizability constraint does
-not by itself protect the detector.
+\subsection{Implications for detector evaluation}
 
-Generalization behaves the same way as robustness. Detection calibrated on the mixed
-corpus collapses on an unseen overpowered attack and breaks unpredictably on individual
-satellites, and which condition breaks which detector is not predicted by the family
-label. That the collapse reproduces, on a separate receiver pipeline, the generalization
-loss that \citet{song2026generalized} report for learned detectors on unseen scenarios
-indicates that it is a property of learned spoofing detection rather than of one
-pipeline.
+Evaluating at the waveform level fixes the interpretation of the resulting failure rates.
+A displacement applied directly to a table of receiver observables corresponds to an attack
+only if some incident waveform produces that displacement. Several observables a receiver
+reports are computed from the same correlator accumulations and cannot be varied
+independently, so an evaluation that varies them independently may report vulnerability to
+a receiver state that no transmission realises. When the attack is generated as a signal,
+the observables are by construction whatever the receiver computed while tracking it, and
+every constraint receiver processing imposes is satisfied because that processing imposed
+it.
 
-Designing a GNSS spoofing detector with robustness that holds under a matched,
-physically realizable attack is the natural next step. Empirical adversarial training
-and certified approaches such as randomized smoothing are the candidate directions, and
-evaluating whether either restores robustness at an acceptable false-alarm rate is the
-focus of ongoing work. The evidence here sets the requirement that such a defence must
-meet: it has to withstand a gradient-free attacker at a common operating point, not
-merely a transferred gradient attack.
+Section~\ref{sec:res_compare} quantifies what this changes. For the tree based detectors
+the feature space and waveform level evaluations agree, and the fragility those models
+exhibit is a property of the models rather than of either evaluation. For the support
+vector machine the two disagree entirely: its minimum perturbation is the largest in the
+study, which taken alone would identify it as the most robust detector, yet it is evaded by
+53 of the 126 transmitted attacks. Its false alarm rate of 0.960 reconciles the two
+readings, since a classifier that flags almost everything is expensive to cross in feature
+space while remaining useless as a monitor. The conclusion is not that one evaluation is
+invalid, but that a perturbation magnitude reported without the false alarm rate that
+accompanies it can invert the ordering it appears to establish.
 
-Framed in integrity terms, the consequence is direct. Figure~\ref{fig:integrity} places
-every detector on the missed-detection against false-alarm plane, where missed detection
-is the integrity risk that precedes hazardously misleading information and the
-false-alarm rate is the continuity risk. On clean data every detector sits in a narrow
-band of low missed detection, so each looks like a serviceable monitor. A single
-decision-based attack held to a fixed, physically small budget of $\varepsilon=0.10$,
-about 6 dB of $C/N_0$, lifts every detector out of that band: missed detection rises to
-between 0.44 and 1.00, so the monitor accepts most or all of the spoofed epochs it would
-otherwise flag. The ordering of the lifted points reproduces the fragility ranking of
-Section~\ref{sec:res_adv} on a safety-relevant axis, and no detector stays in a region
-an integrity monitor could use.
+A related limitation of accuracy based evaluation appears under distribution shift.
+Figure~\ref{fig:generalization} reports recall on data withheld from training, holding out
+either an entire attack scenario or individual satellites. Recall falls in both cases,
+which indicates that the detectors depend on conditions present in their training data even
+before an adversary is introduced.
 
-\begin{figure}[tb]
+% Figure source: figures_src/fig_legacy.py
+\begin{figure*}[t]
 \centering
-\includegraphics[width=\linewidth]{figures/fig12_integrity_plane.pdf}
-\caption{Operational integrity view. Each detector is shown on the missed-detection
-against false-alarm plane at its clean operating point (small marker) and after a single
-decision-based attack at a fixed, physically small budget $\varepsilon=0.10$ (about 6 dB
-of $C/N_0$; large marker), with the false-alarm rate held at its clean value because the
-evasion attack targets spoofed epochs. Missed detection is the integrity risk that
-precedes hazardously misleading information; the false-alarm rate is the continuity risk.
-Higher is worse on both axes, the reverse of clean $F_1$ in
-Figure~\ref{fig:detection}: the gradient-boosting model, second best on clean detection,
-reaches the highest missed detection under attack, and the support-vector machine the
-lowest, so the ordering under attack does not follow clean performance
-(Figure~\ref{fig:inversion}). Every detector leaves the low-missed-detection band under
-the attack, and none remains in a region an integrity monitor could use.}
-\label{fig:integrity}
-\end{figure}
+\includegraphics[width=\textwidth]{figures/fig08_generalization.pdf}
+\caption{Detection recall on data held out from training. Panel (a) holds out a whole attack scenario and panel (b) holds out satellites one at a time. Recall falls in both, so the detectors depend on conditions present in their training data.}
+\label{fig:generalization}
+\end{figure*}
 
-Two findings compound for a practitioner before any adversary is considered. The clean
-false-alarm rate at the safety-first operating point is high, from 0.34 to 0.96
-(Table~\ref{tab:oppoint}), and cross-scenario recall collapses on an unseen attack. On
-this evidence none of the fourteen detectors is deployable as a stand-alone,
-single-epoch integrity monitor today, independently of adversarial robustness. A fielded
-monitor would fuse decisions over time, through a vote or a sequential test across
-epochs, which trades detection latency for a lower per-decision false-alarm rate; the
-per-epoch numbers reported here are the input to such a scheme, not the operating
-performance of a deployed system.
+\subsection{Implications for receiver integrity}
 
-The evaluation covers the static family of the benchmark, which is GPS L1 C/A, with
-three held-out spoofing scenarios and the satellites present in those recordings. The
-gradient-masking result and the fragility ordering depend on the detectors and
-the attack rather than on the specific signal, which leads us to hypothesise that they
-would persist on other civil signals, such as BeiDou B1I or Galileo E1, and on
-multi-frequency receivers, with the realizability enforcer recalibrated to the per-signal
-$C/N_0$-to-power relation. This is a hypothesis rather than a tested result, since the
-present evidence is confined to GPS L1 C/A, and confirming the carry-over would require
-repeating the protocol on those signals. Extending the protocol to a wider set of
-scenarios, to multi-constellation and multi-frequency observables, and to dynamic
-platforms is a natural direction for further work and would test whether the conclusions
-hold across a broader operating envelope.
+The transmitter settings evaluated here were selected without reference to any detector,
+and 126 of them capture a receiver. Approximately two fifths of those evade the strongest
+detector tested, and none of that required knowledge of the detector, access to its
+gradients, or the ability to query it. An adversary possessing any of those capabilities
+would be strictly stronger.
+
+For a receiver integrity monitor the practical consequence is that detection quality
+measured on a fixed corpus is not a security property. It characterises behaviour on that
+corpus, and a detector intended to resist an adversary must be characterised against
+signals the adversary can select and emit, with the false alarm rate reported alongside.
+
+The false alarm rates observed here carry a further implication independent of any
+adversary. At a recall floor of 0.95 they span 0.337 to 0.960, so no detector in this study
+is usable as a standalone single epoch integrity monitor even in the absence of an attacker.
+A deployed monitor would necessarily combine decisions across epochs and across satellites,
+trading detection latency against alarm rate, and the per epoch quantities reported here
+are the inputs to such a scheme rather than a substitute for it.
+
+\subsection{Scope and limitations}
+
+The adversary is restricted in the four respects set out in Section~\ref{sec:threat}, and
+each restriction reduces its capability, so the failure rates reported are a lower bound on
+what an unrestricted adversary could achieve.
+
+The study covers one signal, GPS L1 C/A, and one stationary receiver at a surveyed
+location. Whether the same detectors behave equivalently on other civil signals, or on a
+moving platform whose dynamics enter the observables, is not established here. The
+generator itself is not specific to GPS L1 C/A, and repeating the procedure on another
+signal requires the corresponding spreading code and receiver configuration.
+
+The navigation domain result rests on a common pull-off applied to all satellites, which a
+stationary receiver absorbs into its clock estimate. An adversary seeking to displace the
+reported position rather than the clock would apply differing offsets across satellites,
+and that case is not measured here.
+
+One documented difference between the generated attack and the recorded one is reported in
+Section~\ref{sec:validation}. The generated counterfeit is an amplitude matched replica, so
+its cancellation is cleaner than the recorded spoofer achieved, leaving the generated
+attack marginally stronger and therefore marginally easier to detect. This bias acts
+against the adversary and so does not inflate the failure rates reported.
+
+\subsection{Directions for a defence}
+
+The results constrain what a defence can rely upon. Architecture is not sufficient, since
+both model families appear among the detectors that are evaded. Clean detection quality is
+not sufficient, since the detector with the best clean performance is evaded most often.
+Threshold placement is not sufficient, since resistance obtained by raising the alarm rate
+is paid for on authentic data.
+
+Two directions remain open. The first is to require the detector to respect a physical
+relation that authentic signals satisfy, as has been done for code carrier consistency
+\citep{song2026generalized}; the library of transmitted attacks constructed here supplies
+the signals against which such a detector would need to be evaluated, including the
+settings that hold received power constant through Equation~\ref{eq:neutral}. The second is
+to construct a detector whose behaviour under bounded input change can be certified in
+advance rather than estimated after the fact \citep{cohen2019certified}. Both lie outside
+the scope of the present study, which characterises the behaviour of existing detectors.

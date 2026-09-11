@@ -1,136 +1,164 @@
 \section{Introduction}
 \label{sec:intro}
 
-Global Navigation Satellite Systems provide the positioning, navigation and timing
-(PNT) reference that underpins power-grid synchronization, financial timestamping,
-aviation and autonomous platforms \citep{kaplan2005understanding}. The civil GNSS
-signal is public and unencrypted, so a spoofer that transmits counterfeit
-signals can capture a victim receiver and steer its reported position or clock. Field
-demonstrations have driven a yacht off course through the maritime navigation system
-\citep{bhatti2017hostile} and captured an airborne platform \citep{kerns2014uav}, and
-the underlying detection problem has been studied for more than a decade
-\citep{psiaki2016gnss}. Because spoofing attacks the integrity of the PNT solution
-rather than its availability, a receiver cannot treat the loss of trust as a simple
-outage, and resilient PNT depends on detecting the attack while it is in progress.
+\subsection{GNSS spoofing and its detection}
 
-Classical anti-spoofing tests monitor receiver observables such as the
-carrier-to-noise density ratio, the correlator distortion and the consistency of
-Doppler and code measurements \citep{akos2012gnss,psiaki2016gnss}. These tests are
-interpretable and fast, but each targets a specific manipulation and can be evaded by
-an attacker who respects the monitored quantity. This limitation has motivated a
-rapid shift toward data-driven detectors that learn the joint signature of an attack
-across many observables. Recent work applies deep sequence models and classical
-learners to tracking-stage features and reports high detection accuracy
-\citep{borhanidarian2024deep,li2025realtime,chen2025cgan}, and physics-constrained
-networks now push this line toward generalization across attack conditions
-\citep{song2026generalized}. The subfield has expanded quickly, and machine-learning
-detectors are moving from research prototypes toward integration in receivers.
+A Global Navigation Satellite System (GNSS) supplies a receiver with its position, its
+velocity and its time. Power grids use that time to synchronise, financial systems use it
+to stamp transactions, and aircraft and autonomous platforms use the position to navigate
+\citep{kaplan2005understanding}. The civil signal that carries this service is public and
+unencrypted, and its structure is fully specified in open documents, so a transmitter of
+modest cost can generate a waveform with the same modulation, the same spreading code and
+the same message format as a genuine satellite. A spoofer is such a transmitter. It emits
+counterfeit satellite signals with the intention that a victim receiver tracks them in
+preference to the authentic ones and reports a position or a time of the spoofer's
+choosing. The threat is not hypothetical: a spoofer has steered a yacht off its intended
+course through the ship's navigation system \citep{bhatti2017hostile}, and a spoofer has
+captured an airborne platform in flight \citep{kerns2014uav}.
 
-This progress introduces a risk that GNSS integrity monitoring has not yet
-confronted. Machine-learning classifiers are vulnerable to adversarial examples,
-inputs perturbed by a small amount that a human would consider equivalent yet that
-flip the model decision \citep{szegedy2014intriguing,goodfellow2015explaining}. A
-spoofer is exactly the adaptive adversary that this threat model assumes, since it
-already controls the transmitted signal and therefore controls, within physical
-limits, the observables the detector consumes. A detector that is accurate on a fixed
-attack set can still be defeated by an attacker who shapes the spoofing signal to sit
-on the benign side of the decision boundary. The relevant question for a fielded
-detector is therefore not average accuracy but the worst case an adversary can force.
+Spoofing differs from jamming in a way that determines how it must be handled. A jammer
+denies the service, and the receiver observes that it has lost lock. A spoofer leaves the
+receiver operating nominally while the solution it reports is wrong, so the receiver holds
+no internal evidence that anything has occurred and the attack must be identified while it
+is in progress \citep{psiaki2016gnss}. Capturing a receiver that is already tracking
+authentic signals is correspondingly more demanding than simply transmitting at higher
+power. The published procedure proceeds in three stages: the counterfeit is first aligned
+with the authentic signal in code phase, carrier phase and Doppler frequency, so that the
+victim's correlator sees a single undistorted peak; its power is then raised slightly above
+the authentic power, typically by a few decibels; and only then is the counterfeit dragged
+away from the authentic signal, carrying the tracking loops with it and moving the reported
+position or time \citep{psiaki2016gnss,kerns2014uav}. A counterfeit that omits the
+alignment stage does not capture the receiver at all, and acts only as interference. The
+consequence is that the attacker's freedom is bounded: not every combination of transmitter
+settings takes over a receiver, and an evaluation that ignores this distinction credits a
+detector for rejecting transmissions that would never have succeeded.
 
-A robustness result is only as strong as the attack used to obtain it, and it is only
-comparable across detectors that are measured at the same operating point. Two
-requirements follow, and this study is built on both. The attack has to be matched to
-the model. A non-differentiable tree ensemble or nearest-neighbour classifier denies a
-gradient attack a useful gradient, so its survival under such an attack carries no
-information about its robustness until a gradient-free attack has been applied; the
-adversarial-machine-learning literature calls this pattern gradient masking and
-recommends a gradient-free attack before any robustness claim
-\citep{athalye2018obfuscated,carlini2019evaluating}. The comparison also has to be made
-at one operating point, because recall, false-alarm rate and $F_1$ all move with the
-decision threshold, so detectors read at different thresholds are not directly
-comparable.
+Classical anti-spoofing tests monitor quantities the receiver computes in the course of
+tracking a satellite. Representative examples are the carrier-to-noise density ratio, which
+reflects received signal strength; the shape of the correlation function, which distorts
+when a second copy of the same code is present; and the agreement between code and carrier
+measurements of a single satellite \citep{akos2012gnss,psiaki2016gnss}. Each such test
+identifies one physical signature of an attack, which makes it interpretable and also makes
+it evadable: a spoofer that holds the named quantity within its nominal range passes the
+test, and the set of tests a receiver runs is public knowledge.
 
-A further requirement is specific to the GNSS setting. An adversarial perturbation in
-feature space is meaningful only if it corresponds to a signal that a spoofer could
-actually transmit. Several receiver observables are algebraic functions of others,
-and perturbing a derived quantity independently of its parent produces a receiver
-state that cannot physically occur. A credible evaluation must restrict the attacker
-to the physically realizable set and must respect the couplings among observables,
-otherwise the reported vulnerability overstates what an attacker can achieve.
+\subsection{Learned detectors and how they are evaluated}
 
-Generalization to unseen spoofing conditions is a related and equally practical
-concern. Physics-constrained detectors that embed the code-carrier relationship as a
-training constraint have been shown to hold accuracy across held-out scenarios where
-standard detectors do not \citep{song2026generalized}. That concerns the
-clean signal and the distribution shift between attack types. Robustness to a
-deliberate adversary is a separate axis, and it is the axis this paper measures,
-alongside cross-scenario and cross-satellite generalization on the same corpus.
+The limitation of signature based tests has motivated detectors inferred from data. A
+machine learning detector is a classifier trained on labelled epochs, some recorded while
+the receiver tracked authentic signals and some recorded under spoofing, which learns which
+joint configurations of receiver measurements indicate an attack. Because such a classifier
+reads many measurements simultaneously, it can exploit dependencies that no single hand
+written statistic encodes, and recent work reports high detection accuracy for both deep
+architectures and classical classifiers applied to receiver observables
+\citep{borhanidarian2024deep,li2025realtime,chen2025cgan}. Physics constrained networks
+extend the approach towards attacks absent from the training data by imposing relations that
+authentic signals must satisfy \citep{song2026generalized}.
 
-We evaluate fourteen detectors on receiver observables generated by the open
-FGI-GSRx software-defined receiver from the Texas Spoofing Test Battery (TEXBAT)
-recordings \citep{humphreys2012texbat,humphreys2016texbatds78,fgigsrx}. Processing raw
-in-phase and quadrature samples through a published receiver, rather than a bespoke
-pipeline, yields the observables that a real integrity monitor would compute and makes
-the feature generation reproducible. We restrict every detector to nine physically
-independent observables, place all fourteen at a common operating point of clean
-recall 0.95, and attack them with one shared suite (Figure~\ref{fig:pipeline}). The suite pairs white-box gradient
-attacks and multi-surrogate transfer with three GNSS domain manipulations and a
-gradient-free decision-based attack that provides a matched upper bound on the
-vulnerability of the non-differentiable models. A signal-validity enforcer projects
-every adversarial example onto the band that keeps the carrier-to-noise ratio
-consistent with the correlator power that would produce it, the realizability
-condition detailed in Section~\ref{sec:enforcer}.
+The evaluation practice that accompanies this literature is uniform: a detector is scored
+against a fixed collection of recorded or simulated attacks. Those attacks were selected
+before the detector existed, by whoever assembled the corpus, and they do not respond to the
+classifier under test. A spoofer does respond. It selects the counterfeit power, the rate at
+which it drags the code away from the authentic code, and the frequency and phase of its
+carrier, and each of those choices alters the measurements the victim receiver produces and
+therefore alters what the detector reads. Detection accuracy obtained against a fixed corpus
+describes the corpus. It does not, by itself, characterise behaviour against an adversary
+that chooses what to transmit, and the two quantities need not coincide.
 
+\subsection{Receiver in the loop evaluation of transmitted attacks}
+
+This paper evaluates fourteen detectors under attacks that are radio signals rather than
+perturbations of a measurement table. A counterfeit GPS L1 C/A waveform is synthesised at
+sample level, summed with authentic recorded samples from the Texas Spoofing Test Battery
+\citep{humphreys2012texbat,humphreys2016texbatds78}, passed through a model of the receiver
+front end, and tracked by the FGI-GSRx software receiver \citep{fgigsrx}. The observables
+each detector reads are those the receiver computes while tracking that sum.
+Figure~\ref{fig:geometry} contrasts authentic operation with a spoofing attack, and
+Figure~\ref{fig:pipeline} shows the evaluation chain.
+
+% Figure source: figures_src/static/fig_spoofing_geometry.png (hand made)
 \begin{figure*}[t]
 \centering
-\includegraphics[width=\textwidth]{figures/fig01_pipeline.jpg}
-\caption{Signal-level evaluation pipeline. Raw TEXBAT in-phase and quadrature
-recordings are processed by the FGI-GSRx software-defined receiver into per-epoch
-observables, which feed eight classical and six deep detectors. Every detector is
-placed at the common recall-0.95 operating point and attacked by the same suite, from
-white-box FGSM and PGD through multi-surrogate transfer and the GNSS domain attacks to
-the gradient-free decision-based attack.}
+\includegraphics[width=\textwidth]{figures/fig_spoofing_geometry.png}
+\caption{A GNSS receiver under authentic signals and under a spoofing attack. In (a) the receiver solves its true position from the satellite signals. In (b) a spoofing transmitter emits a counterfeit constellation that arrives at higher received power, captures the tracking loops, and moves the reported position while the receiver continues to report a valid solution.}
+\label{fig:geometry}
+\end{figure*}
+
+% Figure source: figures_src/static/fig01_pipeline (hand made, distributed by
+% figures_src/sync.py). Do not edit the copy inside figures/, it is overwritten.
+\begin{figure*}[t]
+\centering
+\includegraphics[width=\textwidth]{figures/fig01_pipeline.jpeg}
+\caption{How a transmitted attack becomes a detector input. A counterfeit GPS L1 C/A
+signal is generated as radio samples and added to authentic recorded samples. The sum
+passes through the front end and is tracked by the FGI-GSRx software receiver, which
+produces the nine per-epoch measurements the detectors read. The same tracking output
+also feeds the navigation stage, which yields the position and the receiver clock.}
 \label{fig:pipeline}
 \end{figure*}
 
-The evaluation yields four results. At the common operating point no family dominates
-on clean data, so a comparison drawn at a single threshold does not favour deep or
-classical models by construction. Under the matched decision-based attack every
-detector is driven to a worst-case spoof recall near zero, so no architecture in the
-study provides adversarial robustness, and the apparent robustness of the tree and
-nearest-neighbour models under transfer attacks is gradient masking. GNSS heuristic
-manipulations bounded to a fixed budget barely change detection, while learned
-perturbations defeat it, which locates the threat in the learned
-attack rather than in naive signal shaping. Cross-scenario evaluation reproduces the
-generalization collapse, with detection calibrated to 0.95 recall falling to a mean
-of 0.26 on the unseen overpowered scenario.
+Evaluating at the waveform level fixes the relationship between the adversary's actions and
+the detector's inputs. The adversary acts on transmitter settings, listed in
+Table~\ref{tab:attacker}, which are the quantities a physical spoofer controls; the
+observables follow from a receiver tracking the resulting signal, and inherit whatever
+dependencies receiver processing imposes on them. Several of the observables a detector
+reads are computed from the same underlying correlator output and therefore cannot be varied
+independently, so the mapping from adversary action to detector input is not the identity
+and is not free. The generator is validated against data set ds7 of the battery, a recorded
+attack whose construction is documented in full \citep{humphreys2016texbatds78}, and
+reproduces the observables recorded for it.
 
-The contributions of this paper are the following.
+All fourteen detectors are placed at a common operating point, defined as the highest
+decision threshold at which a detector still flags 95 percent of spoofed samples on clean
+validation data. A common operating point is necessary because a classifier's error rates
+move together with its threshold, so detectors read at different thresholds are not
+comparable. The false alarm rate each detector pays to meet the recall floor is reported
+alongside every result.
+
+Three findings follow. First, ranking on clean data inverts under transmitted attack: the
+random forest attains the highest clean $F_1$ score, the harmonic mean of precision and
+recall, and the lowest false alarm rate, yet fails to flag 55 of the 126 transmitted attacks
+that capture the receiver, flagging as few as 0.1 percent of the spoofed samples of one of
+them. Second, the detectors that flag every attack achieve this only by flagging 46 to 74
+percent of authentic data, a regime in which a receiver would alarm almost continuously, so
+their apparent resistance is not operationally available. Across all fourteen, false alarm
+rates at this operating point span 34 to 96 percent. Third, a missed attack propagates to
+the navigation solution: followed through the navigation stage, one such attack drives the
+receiver clock at 48.89 nanoseconds per second against a commanded 48.87, after the
+receiver's own drift of 0.12 nanoseconds per second has been measured and removed.
+
+\subsection{Contributions}
+
 \begin{itemize}
-  \item A model-fair adversarial evaluation protocol for GNSS spoofing detectors that
-  applies one shared attack suite to every model at one common operating point, and
-  that treats non-differentiability as a reason to use a gradient-free attack rather
-  than as evidence of robustness.
-  \item A reproducible signal-level corpus of nine physically independent receiver
-  observables, generated from TEXBAT by an open software-defined receiver, with
-  within-recording labelling that removes the recording-identity confound.
-  \item A signal-validity enforcer that projects adversarial examples onto a band that
-  preserves the coupling between reported signal quality and correlator power, a
-  necessary realizability condition that rules out the grossly unrealizable
-  feature-space perturbations an unconstrained attack would permit; the constraints it
-  does not model are stated as an explicit threat-model boundary.
-  \item Evidence across fourteen detectors that no architecture is robust under a
-  matched attack, that classical robustness under transfer is gradient masking, and
-  that cross-scenario detection collapses on an unseen attack. Because this holds for
-  every architecture evaluated, the study motivates engineering robustness into the
-  detector instead of selecting it by architecture, and frames the design of such a
-  defence as the central direction for future work, not a result delivered here.
+  \item An evaluation methodology for GNSS spoofing detectors in which every attack is
+  synthesised as radio samples, summed with authentic recordings and tracked by a software
+  receiver, so that the detector inputs are produced by receiver processing of a
+  transmittable waveform. The generator is validated by reproducing a recorded attack whose
+  construction is published.
+
+  \item A library of 209 transmitter settings spanning counterfeit power, code pull-off
+  rate and carrier alignment, of which 126 satisfy the published conditions for receiver
+  takeover. The library expresses the adversary's choice set as data and separates
+  transmissions that capture a receiver from those that do not.
+
+  \item A comparative evaluation of fourteen detectors, eight classical and six deep,
+  against that library at a common operating point, reporting for each detector the number
+  of transmitted attacks it fails to flag together with the false alarm rate it incurs on
+  authentic data.
+
+  \item A navigation domain measurement establishing that a missed attack reaches the
+  position and timing solution, obtained by propagating one such attack through the
+  navigation stage and comparing the induced clock drift against the rate the transmitter
+  was configured to impose.
 \end{itemize}
 
-The remainder of the paper is organized as follows. Section~\ref{sec:related} reviews
-learning-based spoofing detection and adversarial robustness. Section~\ref{sec:signal}
-describes the receiver signal model and the observable set. Section~\ref{sec:threat}
-states the threat model, and Section~\ref{sec:method} details the detectors, the
-common operating point, the attack suite and the enforcer. Section~\ref{sec:results}
-reports the results, Section~\ref{sec:discussion} discusses their implications for
-resilient PNT, and Section~\ref{sec:conclusion} concludes.
+\subsection{Organisation}
+
+Section~\ref{sec:related} reviews spoofing detection and the robustness of learned
+classifiers. Section~\ref{sec:signal} describes the receiver processing chain and the
+observables it produces. Section~\ref{sec:threat} defines the threat model and the attack
+space. Section~\ref{sec:method} presents the waveform generator, its validation, the attack
+library, the detector set and the operating point calibration.
+Section~\ref{sec:results} reports the results, Section~\ref{sec:discussion} examines their
+implications for receiver integrity and states the scope of the study, and
+Section~\ref{sec:conclusion} concludes.

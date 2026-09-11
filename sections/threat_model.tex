@@ -1,59 +1,125 @@
-\section{Threat Model}
+\section{Threat Model and Attack Space}
 \label{sec:threat}
 
-We evaluate every detector under one common threat model. We specify it in the standard
-adversarial-machine-learning terms that separate the attacker's goal from its knowledge
-of the detector and its capability to shape the input \citep{biggio2018wild}. The
-attacker is a spoofer that already transmits counterfeit signals and seeks to convert a
-spoofed observation the detector would flag into one it accepts. A detector maps an
-observable vector $\mathbf{x}\in\mathbb{R}^{d}$ to a spoof score $s(\mathbf{x})\in[0,1]$
-and flags the epoch as spoofed when $s(\mathbf{x})\ge\eta$ at an operating threshold
-$\eta$ (Section~\ref{sec:oppoint}). The attacker manipulates the transmitted signal,
-which in turn moves the receiver observables within the physical limits set out in
-Section~\ref{sec:signal}, seeking an additive perturbation $\bm{\delta}$ that turns a
-spoofed observation the detector would flag ($y=1$, $s(\mathbf{x})\ge\eta$) into one it
-accepts,
-\begin{equation}
-s(\mathbf{x}+\bm{\delta}) < \eta,
-\qquad \lVert\bm{\delta}\rVert_\infty \le \varepsilon,
-\qquad \mathbf{x}+\bm{\delta}\in\mathcal{F},
-\label{eq:threat}
-\end{equation}
-where $\lVert\cdot\rVert_\infty$ is measured in the min-max normalised observable space,
-$\varepsilon$ is the perturbation budget, and $\mathcal{F}$ is the band of receiver
-states admitted by the signal-validity enforcer of Section~\ref{sec:enforcer}. The gradient
-attacks (FGSM, PGD) and their transfer variants fix
-$\varepsilon\in\{0.05,0.10,0.20\}$; the GNSS domain attacks apply a fixed budget in each
-detector's own input space. The gradient-free decision-based
-attack is the exception: rather than test a fixed budget it searches for the smallest
-perturbation that flips each sample, measured as a min-max normalised $L_\infty$ distance,
-and this per-sample minimum is the fragility measure reported in
-Section~\ref{sec:results}. The min-max fragility measure maps directly to physical units.
-The carrier-to-noise density ratio spans about 57 dB-Hz across the training corpus, so the
-most fragile detector, evaded at a median distance near 0.02, falls to a carrier-to-noise
-change of at most about 1.1 dB, while the most robust needs about 0.11, roughly 6 dB. In
-the standardised space the fixed gradient budget of 0.10 corresponds to about 0.5 dB on
-the same observable or about 200 Hz of Doppler. The perturbations that defeat the detectors
-are therefore physically small changes a spoofer can impose rather than abstract normalised
-numbers. Every adversarial
-example is projected by the signal-validity enforcer of Section~\ref{sec:enforcer} onto
-the band set by the coupling between reported signal quality and correlator power, so no
-reported attack violates that amplitude-power relation. This coupling is a necessary
-condition for realizability rather than the full set; Section~\ref{sec:enforcer} states
-which physical constraints the enforcer does and does not model.
+This section defines the adversary, the parameters under its control, the conditions its
+transmission must satisfy to capture a receiver, and the knowledge it is assumed to
+possess. Every adversary action in this study is a choice of transmitter settings, so the
+threat model is stated in terms of a transmitter rather than in terms of a displacement in
+a feature space.
 
-The attacker's access to the detector depends on the detector. For the differentiable
-deep detectors the attacker has white-box gradient access. This is a deliberate
-worst-case assumption: a fielded receiver more likely faces a query-limited or
-transfer-only adversary, so the white-box result upper-bounds the deep detectors'
-vulnerability. For the non-differentiable
-tree and nearest-neighbour detectors the attacker has hard-label access, meaning it
-observes only whether the target receiver continues to accept its signal. A spoofer
-obtains this hard-label signal in practice by watching whether the victim maintains
-lock and reports the intended solution. We treat the non-differentiability of the tree
-and nearest-neighbour detectors as a reason to use a gradient-free attack rather than
-as evidence of robustness, because a model that merely denies useful gradients can
-still be evaded through its decision boundary
-\citep{athalye2018obfuscated,carlini2019evaluating}. The decision-based boundary
-attack, which uses only hard labels, provides the matched upper bound on the
-vulnerability of these detectors \citep{brendel2018decision}.
+\subsection{Adversary model and objective}
+
+The adversary is a spoofer: a transmitter emitting counterfeit GPS L1 C/A signals towards
+a victim receiver. Its objective is to cause the victim to report a position or a time of
+the adversary's choosing while the victim continues to operate nominally, producing a
+converged navigation solution with residuals of ordinary magnitude.
+
+The adversary's only channel to the victim is the radio interface. It does not modify the
+victim's software, read its internal state, or alter the observables the victim computes.
+Its influence on those observables is mediated entirely by the receiver's own acquisition
+and tracking of the composite signal, which is what determines the adversary's variables
+in this study.
+
+\subsection{Transmitter controlled parameters}
+
+Table~\ref{tab:attacker} lists the parameters the adversary sets. A choice of all five
+defines one attack.
+
+\begin{table}[t]
+\centering
+\caption{The attacker's controls. Each row is a transmitter setting, not a property of
+the victim's measurements. One choice of all five defines one attack.}
+\label{tab:attacker}
+\begin{tabular}{@{}llp{8.5cm}@{}}
+\toprule
+Setting & Symbol & What it does \\
+\midrule
+Power advantage      & $\alpha$   & Strength of the counterfeit relative to the
+                                    authentic signal, in decibels \\
+Code offset          & $\tau_0$   & Alignment of the counterfeit code at the start,
+                                    in chips \\
+Code pull-off rate   & $\dot\tau$ & Rate the counterfeit code is dragged away from the
+                                    authentic code \\
+Carrier offset       & $\Delta f$ & Frequency of the counterfeit carrier relative to
+                                    the authentic carrier \\
+Carrier phase        & $\phi_0$   & Phase of the counterfeit carrier relative to the
+                                    authentic carrier \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Two of these parameters carry the attack. The power advantage $\alpha$ determines whether
+the victim's tracking loops transfer to the counterfeit at all, and the pull-off rate
+$\dot\tau$ determines how rapidly the victim's reported range moves once transfer has
+occurred. One chip of GPS L1 C/A code corresponds to
+$c/f_\mathrm{chip} = 293.05$~m of range, where $c$ is the speed of light and
+$f_\mathrm{chip} = 1.023$~MHz is the chipping rate, so a pull-off rate expressed in chips
+per second converts directly to metres per second of induced range error. The remaining
+three parameters govern the alignment of the counterfeit at onset, and therefore govern
+whether the capture conditions of Section~\ref{sec:takeover} are met.
+
+\subsection{Receiver takeover conditions}
+\label{sec:takeover}
+
+The adversary cannot select these parameters arbitrarily and still capture a receiver that
+is already tracking the authentic signals. Two conditions govern capture
+\citep{psiaki2016gnss,kerns2014uav}.
+
+The counterfeit must arrive aligned with the authentic signal in code phase, carrier phase
+and Doppler frequency, so that the victim's correlator observes a single undistorted peak
+rather than two competing peaks. A misaligned counterfeit does not transfer the tracking
+loops; it perturbs the victim's observables without displacing its position or time
+solution, and therefore constitutes interference rather than spoofing. The counterfeit must
+additionally exceed the authentic signal in received power, since code tracking follows the
+dominant correlation peak. In practice the power advantage employed is small, typically a
+few decibels, because a large advantage is itself observable in the receiver's automatic
+gain control and in the reported $C/N_0$.
+
+Only once both conditions hold does the adversary begin to displace the code. These
+conditions define the subset of the parameter space in which an attack is operative, and
+Section~\ref{sec:method} applies them to partition the swept library into transmissions
+that capture the receiver and transmissions that do not. Detector performance is reported
+on the former, so that no detector is credited for flagging a transmission that would not
+have succeeded.
+
+\subsection{Knowledge and access assumptions}
+
+The adversary is assumed to have no knowledge of the victim's detector. It does not know
+which of the fourteen detectors is deployed, what data that detector was trained on, what
+decision threshold it uses, or what score it assigns to any observation. No gradient of any
+detector is computed and no detector is queried at any point in the attack construction.
+
+In the taxonomy of Section~\ref{sec:rw_adversarial} this is weaker than a decision based
+adversary, which at least observes the classifier's output label. It corresponds to a
+spoofer transmitting without feedback from the victim, which is the operationally
+realistic case for an attack on a receiver whose alarm state is not externally visible. The
+detection failures reported in Section~\ref{sec:results} are therefore failures against an
+adversary with no information about the system it defeats.
+
+\subsection{Scope of the adversary model}
+
+Four further restrictions delimit the adversary modelled here relative to the capability a
+spoofer may possess in general.
+
+\begin{itemize}
+  \item \textbf{No detector knowledge.} As stated above, the transmission is not shaped
+  against any specific model.
+  \item \textbf{All tracked satellites are spoofed.} An adversary that leaves one
+  satellite authentic gains an additional degree of freedom, at the cost of an
+  inconsistency between that satellite and the remainder which a cross satellite check may
+  identify.
+  \item \textbf{A single signal is transmitted}, GPS L1 C/A. A receiver combining multiple
+  constellations or multiple frequencies retains evidence that this adversary does not
+  attempt to defeat.
+  \item \textbf{The victim is stationary and its position is surveyed}, so a common
+  pull-off applied to all channels is absorbed into the receiver clock estimate and
+  manifests as a timing error.
+\end{itemize}
+
+These restrictions determine how the results should be interpreted. Each detection failure
+reported in Section~\ref{sec:results} is obtained against this restricted adversary, so the
+measured vulnerability is a lower bound on the vulnerability to an adversary that relaxes
+any of them. The fourth restriction additionally fixes the observable consequence measured
+in Section~\ref{sec:res_nav}: because a common pull-off on all channels is absorbed by the
+clock, the induced error appears in the timing solution, and it is that error which is
+compared against the commanded rate.

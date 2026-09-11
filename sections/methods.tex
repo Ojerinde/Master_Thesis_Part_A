@@ -1,211 +1,264 @@
-\section{Methods}
+\section{Experimental Methodology}
 \label{sec:method}
 
-\subsection{Corpus construction}
+This section describes how the counterfeit signal is generated, how it is checked
+against a recorded attack, how the library of transmitter settings is built, what the
+fourteen detectors are, and how they are set to a common operating point.
+
+\subsection{Corpus and receiver configuration}
 \label{sec:corpus}
 
-We use the static family of the Texas Spoofing Test Battery
-\citep{humphreys2012texbat}: the clean static recording as the authentic baseline and
-the ds2, ds3 and ds7 spoofing scenarios. ds2 is an overpowered time push at about
-10 dB advantage, ds3 is a matched-power time push at about 1.3 dB, and ds7 is a
-power-matched, carrier-phase-aligned takeover \citep{humphreys2016texbatds78}. The
-benchmark's moving-platform scenarios, ds5 and ds6, fall outside the stationary-receiver
-scope of this study. Each recording is processed by the receiver of
-Section~\ref{sec:signal} into per-epoch observables.
+The authentic signal is the cleanStatic recording of the Texas Spoofing Test Battery
+\citep{humphreys2012texbat}. It holds raw in-phase and quadrature samples of the GPS L1
+band taken at a surveyed stationary antenna, at 25 million complex samples per second
+with 16 bits in each component. It contains no spoofing, so it supplies an authentic
+signal that a counterfeit can be added to.
 
-Labels are assigned within each recording rather than by whole-recording identity: in a
-spoofed recording the epochs before the documented takeover carry the authentic label
-and the epochs after the pull-off carry the spoofed label, with the transition band
-discarded; the clean static recording is authentic throughout. Drawing both classes
-from the same recordings removes the recording-identity shortcut, under which a
-detector could separate the classes by learning which recording an epoch came from
-rather than the spoofing signature. The resulting corpus holds about 209{,}000 labelled
-epochs, close to balanced (about 51\% spoofed), so no resampling is applied.
+All tracking is performed by FGI-GSRx \citep{fgigsrx}, an open software receiver. Using
+a published receiver matters for two reasons. The measurements the detectors read are
+the ones a real integrity monitor would compute, and any reader can reproduce them from
+the same recordings with the same software.
 
-Train, validation and test partitions are formed by a leakage-free block-temporal
-split. Within each satellite and recording segment the epochs are ordered by time and
-cut into contiguous blocks of 70\%, 10\% and 20\%, with a purge gap dropped at each
-boundary. A random per-epoch split would leak, because adjacent epochs of the same
-satellite are near-duplicates through temporal autocorrelation, so a random split lets
-almost-identical epochs fall on both sides of the partition and inflates the reported
-performance.
+\subsection{Spoofing waveform generation}
+\label{sec:generator}
 
-\subsection{Detectors}
-\label{sec:detectors}
+The counterfeit is built as radio samples and then added to the authentic samples.
 
-We evaluate fourteen detectors. The eight classical models are a random forest
-\citep{breiman2001random}, gradient boosting \citep{friedman2001greedy}, XGBoost
-\citep{chen2016xgboost}, LightGBM \citep{ke2017lightgbm}, a $k$-nearest-neighbour
-classifier, a multilayer perceptron, a decision tree and a support-vector machine with a
-radial-basis-function kernel, tuned by the same five-fold grid search as every other
-classical model. The six deep models are a one-dimensional convolutional network, a long
-short-term memory network \citep{hochreiter1997long}, a bidirectional LSTM, a
-convolutional-recurrent hybrid, a Transformer \citep{vaswani2017attention} and a temporal
-convolutional network \citep{bai2018empirical}. The multilayer perceptron is a shallow
-feed-forward model and is grouped with the classical detectors. Each model consumes the
-nine observables of Section~\ref{sec:features}. The fourteen span the classifier families
-used across the cited detection literature of Section~\ref{sec:related}: tree ensembles
-and boosting, instance-based classification, kernel methods, a shallow feed-forward
-network, and, among the deep models, the convolutional, recurrent, hybrid and
-attention-based branches of sequence modelling.
+The generator is seeded from the receiver's own tracking of the authentic recording. For
+each satellite the receiver reports, at every millisecond, where it found the code, what
+carrier frequency it is tracking and how strong the signal is. Those quantities describe
+the authentic signal as the receiver sees it, so they are exactly what a counterfeit
+must match in order to arrive aligned. The generator reads them and produces, for each
+satellite, a replica of the GPS L1 C/A signal at the same code phase, the same carrier
+frequency and the same amplitude.
 
-The support-vector machine uses a radial-basis-function kernel, matching the model
-family \citet{an2025adversarial} attack, so their SVM configuration is represented
-under the present protocol. Tuned by the same five-fold grid search as every other
-classical model, it reaches a clean $F_1$ of 0.682, the weakest of the fourteen
-detectors. A linear-kernel variant, trained on the same corpus for comparison,
-separates the classes far worse and is not carried forward: a detector that does not
-separate the classes to begin with is not a meaningful adversarial-robustness test.
+The attacker's settings of Table~\ref{tab:attacker} are then applied to that replica.
+The power advantage scales its amplitude. The code offset and pull-off rate displace its
+code, with the displacement growing at the chosen rate. The carrier offset and phase
+shift its carrier.
 
-\subsection{Common operating point}
-\label{sec:oppoint}
+The counterfeit and the authentic samples are summed, and the result passes through a
+model of the receiver front end before being written. The front end applies automatic
+gain control, which is the mechanism a real receiver uses to keep the signal inside the
+range its converter can represent. When added power would drive the sum beyond that
+range, the gain is reduced so that the sum still fits. This detail matters. Without it,
+added power would clip, and the clipping would be an artefact of the file format instead
+of a property of the attack.
 
-A detector's recall, false-alarm rate and $F_1$ all depend on its decision threshold,
-so a comparison drawn at different thresholds confounds the detector with its operating
-point. We fix one common operating point for every model,
-\begin{equation}
-\eta^\star = \max\{\eta : R_\mathrm{val}(\eta)\ge 0.95\},
-\label{eq:oppoint}
-\end{equation}
-the highest threshold whose recall $R_\mathrm{val}(\eta)$ on the clean validation block
-still meets a floor of 0.95, which is the safety-first choice for an integrity monitor.
-All clean and adversarial metrics are reported at $\eta^\star$. Because the false-alarm
-rate at this recall floor is informative in its own right, we also report a second
-operating point defined by a clean-validation false-alarm ceiling of 0.05, so that a
-high false-alarm rate at the recall floor is visible rather than hidden by the choice
-of threshold.
+The written file is then tracked by FGI-GSRx exactly as the authentic recording is, and
+the measurements it produces are what the detectors read.
 
-\subsection{Attack suite}
-\label{sec:attacks}
+Two properties follow from building the attack this way. Every constraint a receiver
+imposes is satisfied because a receiver produced the measurements, which covers the
+continuity of code and carrier, the bandwidth and settling of the tracking loops, the
+behaviour of the automatic gain control and the smoothness of the measurements from one
+epoch to the next. No projection onto a set of allowed values is applied at any point,
+because there is no perturbation to project.
+Figure~\ref{fig:rxvalid} shows the checks on the receiver itself.
 
-Every detector is attacked by one shared suite at $\eta^\star$. The white-box attacks
-are the single-step fast gradient sign method \citep{goodfellow2015explaining} and
-iterative projected gradient descent \citep{madry2018towards}, both bounded by the
-$L_\infty$ budget $\varepsilon$ and applied to the differentiable deep detectors. For
-the non-differentiable classical detectors the
-gradient attacks are transferred from deep surrogates, both from a single
-convolutional surrogate and from a mean-logit ensemble of three surrogates, since an
-ensemble of surrogates transfers more strongly than one
-\citep{papernot2016transferability,liu2017delving}.
-
-The suite also includes three GNSS domain attacks. We adapt the data location shift
-attack and the similarity noise attack of \citet{an2025adversarial}, which were defined
-in the reported-position domain against a single support vector machine, to the
-receiver-observable domain, and we add a temporal pattern attack that modulates the
-Doppler and $C/N_0$ observables. These attacks are heuristic and physically motivated
-rather than optimised against the detector.
-
-The decisive element of the suite is a gradient-free decision-based boundary attack
-applied to every detector. For each correctly detected spoofed sample it searches, in
-the min-max normalised observable space, for the smallest $L_\infty$ perturbation that
-moves the sample across the decision boundary to the authentic side at $\eta^\star$,
-\begin{equation}
-\rho(\mathbf{x}) = \min_{\bm{\delta}}\ \lVert\bm{\delta}\rVert_\infty
-\quad\text{subject to}\quad
-s\!\big(\Pi_\mathcal{F}(\mathbf{x}+\bm{\delta})\big) < \eta^\star ,
-\label{eq:fragility}
-\end{equation}
-the minimal-perturbation objective of \citet{szegedy2014intriguing} solved with
-hard-label queries in the manner of \citet{brendel2018decision}, evaluated on
-realizable examples through the enforcer $\Pi_\mathcal{F}$ of
-Section~\ref{sec:enforcer}. The per-sample minimum $\rho(\mathbf{x})$ is the fragility
-measure, and a detector's fragility is the median of $\rho$ over its correctly detected
-spoofed samples: a smaller median means a smaller perturbation suffices, so the detector
-is more fragile. Because the attack uses only the hard decision, it
-applies uniformly to differentiable and non-differentiable detectors and provides the
-matched measure of vulnerability that a transferred gradient attack cannot. The suite
-characterises $L_\infty$ vulnerability; other norms such as $L_2$ or $L_0$
-\citep{carlini2017evaluating} may expose different weaknesses and are outside the scope
-of this study.
-
-\subsection{Signal-validity enforcer}
-\label{sec:enforcer}
-
-Every adversarial example, at both training and evaluation, is projected onto the set
-$\mathcal{F}$ of physically attainable receiver states,
-$\tilde{\mathbf{x}}=\Pi_\mathcal{F}(\mathbf{x}+\bm{\delta})$, by a signal-validity
-enforcer fitted on the training partition. Each observable is first clipped to a
-conservative data-driven band. The enforcer then
-couples the reported $C/N_0$ to the correlator power: it fits the log-linear relation
-$\widehat{C/N_0}=a+b\log_{10}(I_P^2+Q_P^2)$ by least squares on the training partition
-and admits only reported values within the empirical residual band of that prediction,
-\begin{equation}
-q_{1} \le (C/N_0) - \big(a + b\log_{10}(I_P^2+Q_P^2)\big) \le q_{99},
-\label{eq:coupling}
-\end{equation}
-where $q_{1}$ and $q_{99}$ are the first and ninety-ninth percentiles of the training
-residuals. An attacker therefore cannot raise the reported signal quality without also
-supplying the correlator power that would produce it. This encodes the dominant physical
-relation between the spoofer's amplitude control and the reported observables and is
-what separates a constrained attack from an arbitrary feature perturbation.
-Figure~\ref{fig:realizability} illustrates the effect. An attack that raises the reported
-$C/N_0$ without supplying the correlator power that would produce it leaves the attainable
-band, and the enforcer projects it back onto that band.
-
-By construction the enforcer acts per epoch: it fixes the amplitude-to-power coupling
-and the conservative per-observable bounds at the instant an observation is reported,
-and it leaves the relation between successive epochs unconstrained. A transmitted
-signal must also satisfy constraints the per-epoch view does not see, among them
-carrier-phase and code-phase continuity, Doppler and clock dynamics, tracking-loop
-(PLL and DLL) bandwidth and transient behaviour, automatic-gain-control response,
-satellite geometry, and the epoch-to-epoch smoothness of the amplitude, phase and code
-trajectories. An attack that respects the amplitude-power coupling can still fail one
-of these, so a temporally aware receiver that checks carrier-tracking-loop consistency
-across epochs could reject a signal the present enforcer admits. The reported attacks
-are accordingly bounded by the single-epoch coupling that most directly governs a
-feature-space perturbation, not certified against every constraint a real signal must
-meet; adding the remaining constraints, particularly the temporal smoothness of the
-amplitude, phase and code trajectories across epochs, would tighten rather than loosen
-the attacker's feasible set, and is the natural next layer of the threat model.
-
-\begin{figure}[tb]
+% Figure source: figures_src/fig_legacy.py
+\begin{figure*}[t]
 \centering
-\includegraphics[width=\linewidth]{figures/fig09_realizability.pdf}
-\caption{The signal-validity enforcer on the $C/N_0$ to correlator-power manifold.
-Receiver observations lie in the empirical band. An adversarial attack that
-raises the reported $C/N_0$ without supplying the correlator power leaves the band
-(unconstrained), and the enforcer projects it back onto the band, so the reported
-attack respects the amplitude-power coupling a feature-space attack would otherwise
-violate (one necessary condition for realizability; the full scope is stated in
-Section~\ref{sec:enforcer}).}
-\label{fig:realizability}
+\includegraphics[width=\textwidth]{figures/fig04_receiver_validation.pdf}
+\caption{Validation of the software receiver on the authentic recording. Panel (a) shows the acquisition metric for each satellite, and panel (b) shows the correlation against code phase for one satellite. Both match what a correctly operating receiver produces, which establishes that the measurements used throughout come from sound tracking.}
+\label{fig:rxvalid}
+\end{figure*}
+
+\subsection{Generator validation}
+\label{sec:validation}
+
+A generator that cannot reproduce a documented attack is not evidence about attacks that
+were never recorded. The check uses data set ds7 of the battery, whose construction is
+published in full \citep{humphreys2016texbatds78}.
+
+That document specifies ds7 as a power matched time push carried out with carrier phase
+alignment. During the takeover the counterfeit phasor is
+$P_s(t) = A_s(t)\,e^{j\theta(t)}$, with the angle $\theta$ rising from $\pi/2$ to $\pi$
+and the amplitude following $A_s(t) = -2A_a\cos\theta(t)$, where $A_a$ is the authentic
+amplitude. Those two choices together give a combined phasor
+\begin{equation}
+P_a + P_s = A_a + A_s e^{j\theta} = -A_a e^{j2\theta},
+\label{eq:ds7takeover}
+\end{equation}
+whose magnitude stays at $A_a$ while its angle turns from $0$ to $\pi$. The victim's
+loops are therefore walked onto the counterfeit with no step in power and no step in
+phase. After the takeover the counterfeit holds at twice the authentic amplitude in
+antipodal phase, so the sum returns to magnitude $A_a$, and the document records that
+the victim's measurements match the clean recording apart from a carrier phase that is
+greater by $\pi$. From then the code is dragged at 1.2 metres per second while the
+counterfeit Doppler is held equal to the authentic Doppler.
+
+Running the generator at those settings reproduces the recorded measurements.
+Figure~\ref{fig:ds7} reports the comparison. Seven of the eight satellites agree within
+half a decibel of carrier-to-noise density ratio. The eighth differs by more, and the
+difference is not isolated: across the satellites the gap between generated and recorded
+grows with the strength of the satellite, with a Spearman rank correlation of $+0.905$
+at $p = 0.002$, and the trend remains when the strongest satellite is removed. The cause
+is that the generated counterfeit is an amplitude matched replica, so the cancellation in
+Equation~\ref{eq:ds7takeover} is cleaner than the recorded spoofer's hardware achieved,
+which leaves the generated attack slightly louder. A slightly louder attack is easier to
+detect, so this difference understates what an attacker can do.
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=\textwidth]{figures/fig_ds7_validation.pdf}
+\caption{The generator reproduces the recorded ds7 attack. Left, the change in
+carrier-to-noise density ratio from the clean recording, for the recorded attack and for
+the generated one, per satellite. Right, the residual between them grows with satellite
+strength, so the strongest satellite is the extreme of a trend and not an isolated
+disagreement. The generated attack sits slightly above the recorded one, which makes it
+easier to detect.}
+\label{fig:ds7}
+\end{figure*}
+
+\subsection{Transmitted attack library}
+\label{sec:library}
+
+The attacker's choice set is expressed as a library. Each entry is one combination of
+the settings in Table~\ref{tab:attacker}, and for each the generator produces a
+composite file which the receiver tracks and the exporter turns into measurements. The
+library holds 209 entries.
+
+Two families of setting are covered. In the first the counterfeit carrier is in phase
+with the authentic carrier, and the power advantage is swept from $-3$ to $10$ decibels.
+The second follows the law of Equation~\ref{eq:ds7takeover}: for a counterfeit of
+amplitude ratio $g$ at phase $\varphi$, the received power is unchanged when
+\begin{equation}
+g = -2\cos\varphi ,
+\label{eq:neutral}
+\end{equation}
+so a counterfeit on this locus is invisible to a test that watches received power alone.
+The ds7 attack sits on it at $\varphi = \pi$ and $g = 2$. Both families are crossed with
+seven code pull-off rates from zero to 147 metres per second and three carrier alignment
+settings.
+
+Section~\ref{sec:threat} gives the two conditions a counterfeit must satisfy to take over
+a receiver. Applied to the library, they select the entries where the counterfeit is
+stronger than the authentic signal and is dragging the code. That is 126 of the 209
+entries, and those 126 are the attacks the detectors are measured against.
+Figure~\ref{fig:attackspace} shows the library and the subset.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{figures/fig_attack_space.pdf}
+\caption{The transmitter settings in the library. Filled markers are the 126 settings
+where the counterfeit is stronger than the authentic signal and is dragging the code,
+which are the conditions for taking over a receiver. Open markers are settings that do
+not meet them. Circles are the in phase family and squares follow the power neutral law
+of Equation~\ref{eq:neutral}.}
+\label{fig:attackspace}
 \end{figure}
 
-\subsection{Evaluation protocol and statistics}
-\label{sec:protocol}
+\subsection{Detector models and training}
+\label{sec:detectors}
 
-Detection is measured under three views. The primary view is the block-temporal split
-within the mixed corpus. The cross-scenario view holds out one spoofing scenario
-entirely and trains on the remainder, which measures generalization to an unseen attack
-type. The leave-satellite view holds out one satellite, which measures generalization
-across satellites. Every fold sets the common operating point on its own validation
-block and retrains each detector on its own training block, so no information from the
-held-out fold enters training.
+Fourteen detectors are tested. They are listed in Table~\ref{tab:detectors} with what
+each one does, so that the comparison can be read without reference to the machine
+learning literature. All fourteen read the same nine measurements described in
+Section~\ref{sec:signal}.
 
-Each deep detector is trained over three random seeds; the standard deviation of clean
-test $F_1$ across seeds is at most 0.024 and of AUC at most 0.019, so the deep-model
-results are stable to retraining. The decision-based fragility is measured on one
-representative trained model per architecture, since the boundary attack is run per
-sample and per detector; the effect sizes that carry the fragility ranking span roughly
-sixfold (Section~\ref{sec:res_adv}), well beyond the across-seed clean variation, so the
-ordering is unlikely to be an artifact of a single training run, though a full
-seed-by-attack sweep is left to future work.
+\begin{table*}[t]
+\centering
+\caption{The fourteen detectors and the decision rule each one applies. The classical
+models decide from the measurements of a single epoch. The deep networks decide from a
+window of consecutive epochs, so they can use how the measurements change.}
+\label{tab:detectors}
+\begin{tabular}{@{}p{3.6cm}lp{7.0cm}@{}}
+\toprule
+Detector & Family & How it decides \\
+\midrule
+Decision tree      & classical & A sequence of threshold tests on single measurements,
+                                 forming one branching rule \citep{breiman2001random} \\
+Random forest      & classical & Many decision trees fitted to different samples of the
+                                 data, whose votes are averaged \citep{breiman2001random} \\
+Gradient boosting  & classical & Trees added one at a time, each fitted to the errors
+                                 left by the previous ones \citep{friedman2001greedy} \\
+XGBoost            & classical & Gradient boosting with additional penalties on tree
+                                 complexity \citep{chen2016xgboost} \\
+LightGBM           & classical & Gradient boosting that grows trees leaf by leaf for
+                                 speed on large data \citep{ke2017lightgbm} \\
+Nearest neighbour  & classical & Labels an epoch by the labels of the most similar
+                                 training epochs \\
+Support vector machine & classical & Places a boundary separating the classes with the
+                                 widest margin, using a radial basis kernel \\
+Multilayer perceptron & classical & A small feed forward network of fully connected
+                                 layers \\
+\midrule
+One dimensional convolutional network & deep & Filters slid along the window respond to
+                                 local patterns in time \\
+Long short term memory & deep & Carries a state along the window, so earlier epochs
+                                 inform later ones \citep{hochreiter1997long} \\
+Bidirectional long short term memory & deep & The same, traversing the window in both
+                                 directions \\
+Convolutional recurrent hybrid & deep & Convolutional filters feeding a recurrent
+                                 layer \\
+Transformer        & deep & Weighs every epoch in the window against every other through
+                                 attention \citep{vaswani2017attention} \\
+Temporal convolutional network & deep & Dilated convolutions reaching across the window
+                                 without recurrence \citep{bai2018empirical} \\
+\bottomrule
+\end{tabular}
+\end{table*}
 
-The decision-based attack is evaluated on 500 correctly detected spoofed test epochs per
-detector, drawn as a uniform random sample from the roughly nineteen thousand such epochs
-in the test partition, so the sample is representative of the test scenario mix rather
-than stratified by scenario; a fixed sample size keeps the per-detector attack cost
-comparable, and per-scenario fragility is not separately resolved at this size.
+The set spans the families used in the detection literature reviewed in
+Section~\ref{sec:rw_learning}, covering tree ensembles, instance based classification,
+kernel methods, a feed forward network and the convolutional, recurrent, hybrid and
+attention branches of sequence modelling.
 
-The effect of the fixed-budget attacks is summarised by the attack success rate, the
-fraction of initially correct detections that an attack flips at $\eta^\star$.
-Uncertainty on the clean $F_1$ is reported as a 10{,}000-sample bootstrap confidence
-interval, and the median minimum $L_\infty$ perturbation of each detector is reported
-with a 10{,}000-sample bootstrap interval over the attacked samples. Pairwise detector
-differences, computed on the clean test-set decisions, are tested with the mid-$p$
-McNemar test \citep{dietterich1998approximate} under Holm correction across all pairs,
-and heterogeneity across attacks is tested with the Friedman test
-\citep{demsar2006statistical}. Reported timings are per-sample inference and
-attack-generation latency; training cost ranged from seconds for the tree detectors to
-tens of minutes for the deep detectors and the kernel machine on the run hardware, and
-memory footprint was not profiled.
+\subsection{Feature space comparison}
+\label{sec:comparison}
+
+The attacks described above are transmitted. To show what a study that perturbed the
+measurements instead would have concluded, each detector is also measured a second way,
+and that measurement is reported alongside as a comparison.
+
+The comparison uses a decision based boundary attack. It is given only the detector's
+output decision for a sample, authentic or spoofed, and no gradient, no score and no
+knowledge of the model. Starting from a spoofed sample the detector flags, and from an
+authentic sample it does not, the attack performs a binary search along the line between
+them to locate the point where the decision changes, then reduces the largest single
+change across the nine measurements while keeping the decision on the authentic side.
+The quantity reported is the smallest such change, measured in the normalised space where
+each measurement is scaled to the unit interval, so the nine are comparable.
+
+This is the appropriate comparison to make. A gradient attack would need access to the
+detector's internals, and Section~\ref{sec:threat} states that the attacker in this study
+has none. A decision based attack needs only the output decision, so it is the strongest
+attack available to an adversary that cannot see inside the model
+\citep{brendel2018decision,chen2020hopskipjump}. It is also the attack that a
+non-differentiable detector cannot evade by denying gradients
+\citep{athalye2018obfuscated}.
+
+The comparison is reported for one purpose. It shows where a measurement space
+evaluation and a transmitted attack agree about a detector and where they do not, which
+Section~\ref{sec:res_compare} sets out. It is not used to support any claim about what a
+spoofer can achieve, because a perturbation of the measurements is not by itself a signal
+a transmitter can send.
+
+\subsection{Operating point calibration}
+\label{sec:oppoint}
+
+A detector reports a score, and a threshold turns that score into a decision. Moving the
+threshold trades two quantities against each other. Recall is the fraction of spoofed
+samples that are flagged. The false alarm rate is the fraction of authentic samples that
+are flagged. Raising the threshold lowers both, and lowering it raises both, so two
+detectors read at different thresholds cannot be compared.
+
+Every detector in this study is therefore set to one common operating point. The
+threshold is the highest value at which the detector still flags 95 percent of the
+spoofed samples in clean validation data,
+\begin{equation}
+\eta^\star = \max\{\eta : R_\mathrm{val}(\eta) \ge 0.95\},
+\label{eq:oppoint}
+\end{equation}
+where $R_\mathrm{val}$ is recall on that data. A recall floor is the safety first choice
+for an integrity monitor, because missing an attack is the failure that matters. The
+false alarm rate each detector pays to meet that floor is reported alongside every
+result, since a detector can always meet a recall floor by flagging everything.
+
+The data are divided so that training, validation and test come from separate blocks of
+each recording, with a gap discarded at every block boundary. Adjacent epochs of the same
+satellite are nearly identical, because the tracking loops have time constants of order a
+second, so a division that scattered neighbouring epochs across the blocks would place
+near copies of the same measurement in training and in test and would inflate every
+score.

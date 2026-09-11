@@ -39,7 +39,7 @@
 
 \begin{document}
 
-\title[Adversarial Vulnerability of GNSS Spoofing Detectors]{Adversarial Vulnerability of Machine-Learning GNSS Spoofing Detectors to Physically Realizable Attacks}
+\title[Adversarial Vulnerability of GNSS Spoofing Detectors]{Adversarial Vulnerability of Machine Learning GNSS Spoofing Detectors to Transmitted Spoofing Signals}
 
 \author*[1]{\fnm{Joel Segun} \sur{Ojerinde}}\email{joelojerinde@buaa.edu.cn}
 \author*[1]{\fnm{Wasiu Akande} \sur{Ahmed}}\email{ahmedwasiu24@buaa.edu.cn}
@@ -49,37 +49,27 @@
 
 \affil[2]{\orgname{Federal University of Technology}, \orgaddress{\city{Owerri}, \country{Nigeria}}}
 
-\abstract{Machine-learning detectors are increasingly proposed to protect Global
-Navigation Satellite System (GNSS) receivers against spoofing, yet their behaviour
-under a deliberate, adaptive adversary is not well established. This paper reports an
-adversarial evaluation of fourteen detectors, six deep networks and eight classical
-models, on
-receiver observables produced by an open software-defined receiver from the static
-family of the Texas Spoofing Test Battery, a stationary-receiver setting. Every detector is placed at a common operating point of clean
-recall 0.95 and is attacked by one shared suite that includes white-box gradient
-attacks, multi-surrogate transfer, three GNSS domain manipulations and a
-gradient-free decision-based attack. Each adversarial example is projected by a
-signal-validity enforcer onto the band set by the coupling between reported signal
-quality and correlator power, a necessary condition for realizability that no reported
-attack violates. On clean data no family dominates, with $F_1$ between
-0.68 and 0.83. Under the decision-based attack every detector, differentiable or not,
-is driven to a worst-case spoof recall near zero. The tree-based detectors require
-the smallest perturbation to evade, led by a model that is second only to the best
-detector on clean data, so resistance to a gradient attack does not by itself indicate
-robustness. The lone outlier, a support-vector machine, needs roughly six times the
-perturbation of the most fragile detector to evade, but only because its operating
-point already calls almost everything spoofed, a robustness-accuracy trade-off rather
-than a property to design for. GNSS manipulations bounded to a fixed realizable budget leave
-detection almost unchanged while learned perturbations do not, which places the threat
-in the learned attack rather than in simple signal shaping. Cross-scenario evaluation shows detection calibrated to 0.95
-recall falling to a mean of 0.26 on the unseen overpowered scenario, and cross-satellite
-failure is specific to a detector and a satellite rather than to a family. Architecture
-choice therefore
-trades detection utility against robustness instead of providing a security
-guarantee, and robustness has to be engineered, not assumed.}
+\abstract{A spoofer broadcasts counterfeit Global Navigation Satellite System (GNSS)
+signals so that a victim receiver computes a false position or time. Detectors trained by machine learning are increasingly
+proposed for this threat, but are evaluated against fixed corpora of recorded attacks that
+do not respond to the detector under test. This paper evaluates fourteen detectors, eight
+classical and six deep, under attacks that are radio signals selected by an adversary. A
+counterfeit GPS L1 C/A waveform is synthesised at sample level, summed with authentic
+recordings from the Texas Spoofing Test Battery and tracked by the FGI-GSRx software
+receiver, so that the observables each detector reads are produced by receiver processing
+of a transmittable signal. The adversary sets counterfeit power, code pull-off rate and
+carrier frequency and phase, with no knowledge of the detector and no query access. The
+generator is validated by reproducing data set ds7, whose construction is published. All
+detectors are placed at a common operating point flagging 95 percent of spoofed samples on
+clean validation data, and evaluated against 126 settings satisfying the published
+conditions for receiver takeover. Clean performance predicts resistance poorly and the two
+orderings are close to inverted: the random forest attains the highest clean $F_1$ score of
+0.833 and the lowest false alarm rate of 0.337, yet is evaded by 55 of the 126 attacks.
+Detectors evading none flag 46 to 74 percent of authentic data. One evaded attack drives
+the receiver clock at 48.89 nanoseconds per second against a commanded 48.87.}
 
-\keywords{GNSS spoofing, Adversarial robustness, Machine learning, Software-defined
-receiver, Resilient PNT, Decision-based attack}
+\keywords{GNSS spoofing, Spoofing detection, Machine learning, Software defined
+receiver, Resilient PNT, Receiver in the loop testing}
 
 \maketitle
 
@@ -96,28 +86,18 @@ receiver, Resilient PNT, Decision-based attack}
 
 \section*{List of abbreviations}
 \begin{description}
-\item[AUC] area under the curve
 \item[CNN] convolutional neural network
+\item[C/N$_0$] carrier-to-noise density ratio
 \item[DLL] delay-lock loop
-\item[DLSA] data location shift attack
-\item[FAR] false-alarm rate
 \item[FGI] Finnish Geospatial Research Institute
-\item[FGSM] fast gradient sign method
+\item[FLL] frequency-lock loop
 \item[GNSS] Global Navigation Satellite System
 \item[GPS] Global Positioning System
-\item[KNN] $k$-nearest neighbour
 \item[LSTM] long short-term memory
-\item[MLP] multilayer perceptron
-\item[PGD] projected gradient descent
 \item[PLL] phase-lock loop
 \item[PNT] positioning, navigation and timing
 \item[PRN] pseudo-random noise
-\item[ROC] receiver operating characteristic
-\item[SNA] similarity noise attack
-\item[SVM] support-vector machine
-\item[TCN] temporal convolutional network
 \item[TEXBAT] Texas Spoofing Test Battery
-\item[TPA] temporal pattern attack
 \end{description}
 
 \section*{Declarations}
