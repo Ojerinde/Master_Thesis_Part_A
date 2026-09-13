@@ -4,7 +4,7 @@
 This section defines the adversary, the parameters under its control, the conditions its
 transmission must satisfy to capture a receiver, and the knowledge it is assumed to
 possess. Every adversary action in this study is a choice of transmitter settings, so the
-threat model is stated in terms of a transmitter rather than in terms of a displacement in
+threat model is stated in terms of a transmitter and not in terms of a displacement in
 a feature space.
 
 \subsection{Adversary model and objective}
@@ -67,15 +67,19 @@ is already tracking the authentic signals. Two conditions govern capture
 
 The counterfeit must arrive aligned with the authentic signal in code phase, carrier phase
 and Doppler frequency, so that the victim's correlator observes a single undistorted peak
-rather than two competing peaks. A misaligned counterfeit does not transfer the tracking
+and not two competing peaks. A misaligned counterfeit does not transfer the tracking
 loops; it perturbs the victim's observables without displacing its position or time
-solution, and therefore constitutes interference rather than spoofing. The counterfeit must
+solution, and therefore constitutes interference and not spoofing. The counterfeit must
 additionally exceed the authentic signal in received power, since code tracking follows the
 dominant correlation peak. In practice the power advantage employed is small, typically a
 few decibels, because a large advantage is itself observable in the receiver's automatic
 gain control and in the reported $C/N_0$.
 
-Only once both conditions hold does the adversary begin to displace the code. These
+Only once both conditions hold does the adversary begin to displace the code. The
+experiments in this paper begin from that point: the generator is seeded from the victim's
+own tracking so that the alignment condition is satisfied by construction, and what is
+measured is detector behaviour after capture has been achieved and not the difficulty
+of achieving it. These
 conditions define the subset of the parameter space in which an attack is operative, and
 Section~\ref{sec:method} applies them to partition the swept library into transmissions
 that capture the receiver and transmissions that do not. Detector performance is reported

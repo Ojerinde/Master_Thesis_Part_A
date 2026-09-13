@@ -6,15 +6,23 @@
 Three findings follow from Section~\ref{sec:results}, each obtained against attacks that
 were synthesised as waveforms and tracked through the receiver.
 
-Clean detection performance does not predict resistance to transmitted attack, and at the
-top of the ranking the two orderings are close to inverted. The random forest attains both
-the highest clean $F_1$ score and the lowest false alarm rate of the fourteen detectors,
-and it is nonetheless evaded by 43.7 percent of the transmitted takeover attacks. This is
-not a marginal effect confined to one model: the four best detectors on clean data occupy
-four of the five worst positions under transmitted attack. Because all fourteen detectors
-are read at the same recall floor, the inversion cannot be attributed to differences in
-threshold placement, and because the attacks were selected without reference to any
-detector, it cannot be attributed to adversarial optimisation against a particular model.
+Clean detection performance does not predict resistance to transmitted attack. The random
+forest attains both the highest clean $F_1$ score and the lowest false alarm rate of the
+fourteen detectors, and it is nonetheless evaded by 43.7 percent of the transmitted
+takeover attacks, with an exact interval of [0.348, 0.528]. The effect is not confined to
+one model: the four detectors with the highest clean $F_1$ are evaded on 0.226 of their
+detector-attack pairs against 0.106 for the remaining ten, a difference significant at
+$p = 2.8 \times 10^{-10}$. Because all fourteen detectors are read at the same recall
+floor, this cannot be attributed to differences in threshold placement, and because the
+attacks were selected without reference to any detector, it cannot be attributed to
+adversarial optimisation against a particular model.
+
+The relationship is a contrast between groups and not a monotone trend across
+architectures. Section~\ref{sec:res_stats} reports a Spearman correlation of $+0.41$
+between clean $F_1$ and evaded fraction which is not significant at $n = 14$, because the
+support vector machine combines the worst clean score with the second highest evasion
+count. Both results are reported, and the contrast is the one the
+evidence supports.
 
 Where resistance does appear, it is purchased with false alarms. Five detectors flag every
 one of the 126 attacks, and those same five flag between 46 and 74 percent of authentic
@@ -33,7 +41,7 @@ orderings induced by different criteria disagree, so no single scalar ranks the 
 \label{fig:tradeoff}
 \end{figure}
 
-A missed detection is consequential rather than benign. The attack propagated through the
+A missed detection is consequential and not benign. The attack propagated through the
 navigation stage drove the receiver clock at the rate the transmitter was configured to
 impose, to within 0.05 percent, while the detector with the best clean performance
 classified 98.8 percent of its samples as authentic. Detection failure and navigation
@@ -54,7 +62,7 @@ it.
 
 Section~\ref{sec:res_compare} quantifies what this changes. For the tree based detectors
 the feature space and waveform level evaluations agree, and the fragility those models
-exhibit is a property of the models rather than of either evaluation. For the support
+exhibit is a property of the models and not of either evaluation. For the support
 vector machine the two disagree entirely: its minimum perturbation is the largest in the
 study, which taken alone would identify it as the most robust detector, yet it is evaded by
 53 of the 126 transmitted attacks. Its false alarm rate of 0.960 reconciles the two
@@ -95,7 +103,7 @@ adversary. At a recall floor of 0.95 they span 0.337 to 0.960, so no detector in
 is usable as a standalone single epoch integrity monitor even in the absence of an attacker.
 A deployed monitor would necessarily combine decisions across epochs and across satellites,
 trading detection latency against alarm rate, and the per epoch quantities reported here
-are the inputs to such a scheme rather than a substitute for it.
+are the inputs to such a scheme and not a substitute for it.
 
 \subsection{Scope and limitations}
 
@@ -111,7 +119,7 @@ signal requires the corresponding spreading code and receiver configuration.
 
 The navigation domain result rests on a common pull-off applied to all satellites, which a
 stationary receiver absorbs into its clock estimate. An adversary seeking to displace the
-reported position rather than the clock would apply differing offsets across satellites,
+reported position and not the clock would apply differing offsets across satellites,
 and that case is not measured here.
 
 One documented difference between the generated attack and the recorded one is reported in
@@ -134,5 +142,5 @@ relation that authentic signals satisfy, as has been done for code carrier consi
 the signals against which such a detector would need to be evaluated, including the
 settings that hold received power constant through Equation~\ref{eq:neutral}. The second is
 to construct a detector whose behaviour under bounded input change can be certified in
-advance rather than estimated after the fact \citep{cohen2019certified}. Both lie outside
+advance and not estimated afterwards \citep{cohen2019certified}. Both lie outside
 the scope of the present study, which characterises the behaviour of existing detectors.

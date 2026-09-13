@@ -67,11 +67,12 @@ that chooses what to transmit, and the two quantities need not coincide.
 
 \subsection{Receiver in the loop evaluation of transmitted attacks}
 
-This paper evaluates fourteen detectors under attacks that are radio signals rather than
+This paper evaluates fourteen detectors under attacks that are radio signals and not
 perturbations of a measurement table. A counterfeit GPS L1 C/A waveform is synthesised at
 sample level, summed with authentic recorded samples from the Texas Spoofing Test Battery
 \citep{humphreys2012texbat,humphreys2016texbatds78}, passed through a model of the receiver
-front end, and tracked by the FGI-GSRx software receiver \citep{fgigsrx}. The observables
+front end, and tracked by the FGI-GSRx software receiver \citep{fgigsrx}, published by the
+Finnish Geospatial Research Institute (FGI). The observables
 each detector reads are those the receiver computes while tracking that sum.
 Figure~\ref{fig:geometry} contrasts authentic operation with a spoofing attack, and
 Figure~\ref{fig:pipeline} shows the evaluation chain.
@@ -98,7 +99,11 @@ also feeds the navigation stage, which yields the position and the receiver cloc
 \end{figure*}
 
 Evaluating at the waveform level fixes the relationship between the adversary's actions and
-the detector's inputs. The adversary acts on transmitter settings, listed in
+the detector's inputs, for the regime this study addresses. The generator is seeded from the
+receiver's own tracking of the authentic recording, so the counterfeit arrives aligned, and
+the evaluation therefore characterises detector behaviour conditional on an adversary having
+achieved that alignment. Achieving it is a separate problem, and the results here should be
+read as conditional on capture and not as an end to end demonstration. The adversary acts on transmitter settings, listed in
 Table~\ref{tab:attacker}, which are the quantities a physical spoofer controls; the
 observables follow from a receiver tracking the resulting signal, and inherit whatever
 dependencies receiver processing imposes on them. Several of the observables a detector
@@ -129,28 +134,43 @@ receiver's own drift of 0.12 nanoseconds per second has been measured and remove
 
 \subsection{Contributions}
 
-\begin{itemize}
-  \item An evaluation methodology for GNSS spoofing detectors in which every attack is
-  synthesised as radio samples, summed with authentic recordings and tracked by a software
-  receiver, so that the detector inputs are produced by receiver processing of a
-  transmittable waveform. The generator is validated by reproducing a recorded attack whose
-  construction is published.
+The principal contribution is the evaluation methodology, because the findings that
+follow hold only if the detector inputs are produced by receiver processing of a
+signal an adversary could transmit. The remaining four rest on it: the second supplies
+the adversary's choice set, the third and fourth measure what existing detectors do
+against that choice set and what a failure costs, and the fifth relates the result to
+the feature space evaluation the literature more commonly reports.
 
-  \item A library of 209 transmitter settings spanning counterfeit power, code pull-off
-  rate and carrier alignment, of which 126 satisfy the published conditions for receiver
-  takeover. The library expresses the adversary's choice set as data and separates
-  transmissions that capture a receiver from those that do not.
+\begin{enumerate}
+  \item \textbf{An evaluation methodology in which every attack is a transmitted
+  waveform.} Each attack is synthesised as radio samples, summed with authentic
+  recordings and tracked by a software receiver, so that the detector inputs are
+  produced by receiver processing of a transmittable waveform. The generator is
+  validated by reproducing a recorded attack whose construction is published.
 
-  \item A comparative evaluation of fourteen detectors, eight classical and six deep,
-  against that library at a common operating point, reporting for each detector the number
-  of transmitted attacks it fails to flag together with the false alarm rate it incurs on
-  authentic data.
+  \item \textbf{A library of transmitted attacks.} Two hundred and nine transmitter
+  settings spanning counterfeit power, code pull-off rate and carrier alignment, of
+  which 126 satisfy the published conditions for receiver takeover. The library
+  expresses the adversary's choice set as data and separates transmissions that
+  capture a receiver from those that do not.
 
-  \item A navigation domain measurement establishing that a missed attack reaches the
-  position and timing solution, obtained by propagating one such attack through the
-  navigation stage and comparing the induced clock drift against the rate the transmitter
-  was configured to impose.
-\end{itemize}
+  \item \textbf{A comparative evaluation of fourteen detectors,} eight classical and
+  six deep, against that library at a common operating point, reporting for each
+  detector the number of transmitted attacks it fails to flag together with the false
+  alarm rate it incurs on authentic data, with exact binomial intervals on every
+  count.
+
+  \item \textbf{A navigation domain measurement} establishing that a missed attack
+  reaches the position and timing solution, obtained by propagating one such attack
+  through the navigation stage and comparing the induced clock drift against the rate
+  the transmitter was configured to impose.
+
+  \item \textbf{A comparison against feature space evaluation,} in which the same
+  detectors are attacked by perturbing measurements directly. The two views agree on
+  which detectors are fragile, and disagree on the support vector machine, whose
+  apparent resistance is accounted for by its false alarm rate. A perturbation size
+  reported without that rate would invert the conclusion.
+\end{enumerate}
 
 \subsection{Organisation}
 

@@ -22,7 +22,7 @@ meeting the recall floor.
 \begin{table*}[t]
 \centering
 \caption{Every detector at the common operating point of Equation~\ref{eq:oppoint},
-ordered by false alarm rate. Passed counts the transmitted take over attacks, out of
+ordered by false alarm rate. Passed counts the transmitted takeover attacks, out of
 126, for which the detector flags fewer than half the spoofed samples. Lowest detection
 is the smallest fraction of an attack's samples the detector flagged. The final column
 is the smallest perturbation of the measurements alone that crosses the decision
@@ -62,7 +62,20 @@ is last on both counts, at 0.682 and 0.960.
 The false alarm rates deserve attention on their own. Across the fourteen detectors they
 run from 0.337 to 0.960. Even the best of them flags about a third of authentic samples
 as spoofed. On this evidence no detector in the study is usable as a standalone
-single epoch integrity monitor, before any attacker is considered. A fielded monitor
+single epoch integrity monitor, before any attacker is considered.
+
+These figures are lower than those commonly reported for learned GNSS spoofing detectors,
+and two deliberate choices account for the difference. The first is the operating rule:
+Equation~\ref{eq:oppoint} fixes a recall floor of 0.95 and accepts whatever false alarm
+rate that costs, which is the safety first choice for an integrity monitor and is more
+severe than reporting the threshold that maximises accuracy. The second is the
+partitioning described in Section~\ref{sec:signal}: training, validation and test are
+disjoint contiguous blocks with a margin discarded at each boundary, because adjacent
+epochs of the same satellite are strongly correlated and a randomised split places near
+duplicates of the same observation on both sides of it. A randomised split raises every
+reported figure without any change to the detector, so numbers obtained under the two
+protocols are not comparable. The values here should be read as what these architectures
+achieve under a severe operating rule and a partition that does not leak. A fielded monitor
 would combine decisions over several epochs, trading detection latency for a lower rate
 of false alarms, and the per epoch numbers reported here are the input to such a scheme.
 Figure~\ref{fig:oppoint} shows the clean scores at that operating point.
@@ -89,7 +102,7 @@ Table~\ref{tab:main} and Figure~\ref{fig:detection} report the outcome.
 \begin{figure}[t]
 \centering
 \includegraphics[width=\linewidth]{figures/fig_detection_vs_transmitted.pdf}
-\caption{Transmitted take over attacks each detector fails to flag, out of 126. The
+\caption{Transmitted takeover attacks each detector fails to flag, out of 126. The
 clean false alarm rate each detector pays at the common operating point is printed
 beside its bar. The detector with the lowest false alarm rate fails to flag the most
 attacks.}
@@ -126,6 +139,65 @@ Figure~\ref{fig:integrity} places the detectors on the two axes an integrity mon
 \caption{Each detector placed by the two risks a navigation integrity monitor trades. The horizontal axis is the false alarm rate on authentic data, which drives continuity risk. The vertical axis is the missed detection rate, which drives integrity risk. No detector reaches the lower left corner.}
 \label{fig:integrity}
 \end{figure}
+
+\subsection{Statistical support}
+\label{sec:res_stats}
+
+Each detector's evasion count is a binomial outcome on a common denominator of 126, so
+Table~\ref{tab:th_ci} reports an exact Clopper-Pearson interval for each. The exact
+interval is used in place of the normal approximation because five detectors evade nothing,
+and the Wald interval is degenerate and badly undercovers at the boundary
+\citep{brown2001interval}.
+
+\begin{table}[t]
+\centering
+\caption{Evasion counts with exact 95 percent Clopper-Pearson intervals, out of 126
+transmitted takeover attacks, ordered by count.}
+\label{tab:th_ci}
+\footnotesize
+\begin{tabular}{@{}p{3.9cm}rrl@{}}
+\toprule
+Detector & Evaded & Fraction & 95\% interval \\
+\midrule
+Random forest & 55 & 0.437 & [0.348, 0.528] \\
+Support vector machine & 53 & 0.421 & [0.333, 0.512] \\
+XGBoost & 28 & 0.222 & [0.153, 0.305] \\
+Gradient boosting & 27 & 0.214 & [0.146, 0.296] \\
+LightGBM & 27 & 0.214 & [0.146, 0.296] \\
+Decision tree & 21 & 0.167 & [0.106, 0.243] \\
+Transformer & 18 & 0.143 & [0.087, 0.216] \\
+Multilayer perceptron & 14 & 0.111 & [0.062, 0.179] \\
+Temporal convolutional & 4 & 0.032 & [0.009, 0.079] \\
+Nearest neighbour & 0 & 0.000 & [0.000, 0.029] \\
+Long short term memory & 0 & 0.000 & [0.000, 0.029] \\
+Bidirectional LSTM & 0 & 0.000 & [0.000, 0.029] \\
+Convolutional network & 0 & 0.000 & [0.000, 0.029] \\
+Convolutional recurrent & 0 & 0.000 & [0.000, 0.029] \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The relation between clean performance and resistance is reported as a contrast and not
+as a monotone trend, because only the contrast is supported. Taking the four detectors with
+the highest clean $F_1$ against the remaining ten, the first group is evaded on 114 of 504
+detector-attack pairs and the second on 133 of 1260, that is 0.226 against 0.106. Fisher's
+exact test on that table gives $p = 2.8 \times 10^{-10}$. The random forest alone, at 55 of
+126, is evaded more often than gradient boosting at 27 of 126, with $p = 2.6 \times
+10^{-4}$, and more often than the five detectors that evade nothing, whose interval
+[0.000, 0.029] does not approach its own [0.348, 0.528].
+
+The monotone rank relationship across all fourteen detectors is weaker and is not
+significant. Spearman's rank correlation between clean $F_1$ and evaded fraction is
+$\rho = +0.41$, with a permutation $p$ of 0.15 from 200\,000 random relabellings. The
+reason is visible in Table~\ref{tab:th_ci}: the support vector machine has the lowest clean
+$F_1$ in the study and the second highest evasion count, which breaks any monotone
+ordering. Excluding it, as a declared sensitivity analysis and on the ground that its false
+alarm rate of 0.960 makes it degenerate as a monitor, gives $\rho = +0.70$ with a
+permutation $p$ of 0.010.
+
+The claim this study supports is therefore that the detectors which perform best on clean
+data are evaded substantially and significantly more often than the rest, and not that
+evasion increases monotonically with clean performance across every architecture.
 
 \subsection{A single transmitter setting evading six detectors}
 \label{sec:res_single}
@@ -166,6 +238,10 @@ receiver clock at
 \frac{\dot\tau \, c/f_\mathrm{chip}}{c} = \frac{14.65}{c} = 48.87~\mathrm{ns/s}.
 \label{eq:clockrate}
 \end{equation}
+
+Equation~\ref{eq:clockrate} is a prediction and not a fit: it follows from the commanded
+pull-off rate and the chip length alone, with no free parameter, so the measurement either
+matches it or does not.
 
 The receiver's own clock drift is measured first, by running the same window with the
 counterfeit switched off. It is 0.12 nanoseconds per second, so it is negligible against

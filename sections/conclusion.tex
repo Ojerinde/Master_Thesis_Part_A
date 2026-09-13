@@ -13,10 +13,13 @@ Fourteen detectors, eight classical and six deep, were placed at a common operat
 defined by a recall floor of 0.95 on clean validation data, and evaluated against 126
 transmitter settings satisfying the published conditions for receiver takeover.
 
-Clean detection performance was found to be a poor predictor of resistance, and at the top
-of the ranking the two orderings were close to inverted. The random forest attained the
-highest clean $F_1$ score at 0.833 and the lowest false alarm rate at 0.337, and failed to
-flag 55 of the 126 attacks, flagging 0.1 percent of the spoofed samples of one of them. The
+Clean detection performance was found to be a poor predictor of resistance. The random
+forest attained the highest clean $F_1$ score at 0.833 and the lowest false alarm rate at
+0.337, and failed to flag 55 of the 126 attacks, flagging 0.1 percent of the spoofed
+samples of one of them. Across the set, the four detectors with the highest clean $F_1$
+were evaded at 0.226 of their detector-attack pairs against 0.106 for the remaining ten,
+significant at $p = 2.8 \times 10^{-10}$, although the monotone rank correlation across all
+fourteen is not significant and is reported as such. The
 five detectors that flagged every attack did so while flagging between 46 and 74 percent of
 authentic samples, a regime in which the resistance is not operationally available. Across
 all fourteen detectors, false alarm rates at this operating point ranged from 0.337 to
