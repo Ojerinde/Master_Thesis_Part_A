@@ -41,8 +41,13 @@
 
 \title[Adversarial Vulnerability of GNSS Spoofing Detectors]{Adversarial Vulnerability of Machine Learning GNSS Spoofing Detectors to Transmitted Spoofing Signals}
 
+\author*[1]{\fnm{Joel Segun} \sur{Ojerinde}}\email{joelojerinde@buaa.edu.cn}
+\author*[1]{\fnm{Wasiu Akande} \sur{Ahmed}}\email{ahmedwasiu24@buaa.edu.cn}
+\author[2]{\fnm{Akinyinka Olukunle} \sur{Akande}}
 
+\affil*[1]{\orgdiv{Regional Centre for Space Science and Technology Education in Asia and the Pacific (RCSSTEAP), Hangzhou International Innovation Institute}, \orgname{Beihang University}, \orgaddress{\city{Hangzhou 311115}, \country{China}}}
 
+\affil[2]{\orgname{Federal University of Technology}, \orgaddress{\city{Owerri}, \country{Nigeria}}}
 
 \abstract{A spoofer broadcasts counterfeit Global Navigation Satellite System (GNSS)
 signals so that a victim receiver computes a false position or time. Detectors trained by machine learning are increasingly
@@ -137,16 +142,16 @@ that chooses what to transmit, and the two quantities need not coincide.
 
 \subsection{Receiver in the loop evaluation of transmitted attacks}
 
-This paper evaluates fourteen detectors under attacks that are radio signals rather than
+This paper evaluates fourteen detectors under attacks that are radio signals and not
 perturbations of a measurement table. A counterfeit GPS L1 C/A waveform is synthesised at
 sample level, summed with authentic recorded samples from the Texas Spoofing Test Battery
 \citep{humphreys2012texbat,humphreys2016texbatds78}, passed through a model of the receiver
-front end, and tracked by the FGI-GSRx software receiver \citep{fgigsrx}. The observables
+front end, and tracked by the FGI-GSRx software receiver \citep{fgigsrx}, published by the
+Finnish Geospatial Research Institute (FGI). The observables
 each detector reads are those the receiver computes while tracking that sum.
 Figure~\ref{fig:geometry} contrasts authentic operation with a spoofing attack, and
 Figure~\ref{fig:pipeline} shows the evaluation chain.
 
-% Figure source: figures_src/static/fig_spoofing_geometry.png (hand made)
 \begin{figure*}[t]
 \centering
 \includegraphics[width=\textwidth]{fig_spoofing_geometry.png}
@@ -154,8 +159,6 @@ Figure~\ref{fig:pipeline} shows the evaluation chain.
 \label{fig:geometry}
 \end{figure*}
 
-% Figure source: figures_src/static/fig01_pipeline (hand made, distributed by
-% figures_src/sync.py). Do not edit the copy inside figures/, it is overwritten.
 \begin{figure*}[t]
 \centering
 \includegraphics[width=\textwidth]{fig01_pipeline.jpeg}
@@ -168,7 +171,11 @@ also feeds the navigation stage, which yields the position and the receiver cloc
 \end{figure*}
 
 Evaluating at the waveform level fixes the relationship between the adversary's actions and
-the detector's inputs. The adversary acts on transmitter settings, listed in
+the detector's inputs, for the regime this study addresses. The generator is seeded from the
+receiver's own tracking of the authentic recording, so the counterfeit arrives aligned, and
+the evaluation therefore characterises detector behaviour conditional on an adversary having
+achieved that alignment. Achieving it is a separate problem, and the results here should be
+read as conditional on capture and not as an end to end demonstration. The adversary acts on transmitter settings, listed in
 Table~\ref{tab:attacker}, which are the quantities a physical spoofer controls; the
 observables follow from a receiver tracking the resulting signal, and inherit whatever
 dependencies receiver processing imposes on them. Several of the observables a detector
@@ -199,28 +206,43 @@ receiver's own drift of 0.12 nanoseconds per second has been measured and remove
 
 \subsection{Contributions}
 
-\begin{itemize}
-  \item An evaluation methodology for GNSS spoofing detectors in which every attack is
-  synthesised as radio samples, summed with authentic recordings and tracked by a software
-  receiver, so that the detector inputs are produced by receiver processing of a
-  transmittable waveform. The generator is validated by reproducing a recorded attack whose
-  construction is published.
+The principal contribution is the evaluation methodology, because the findings that
+follow hold only if the detector inputs are produced by receiver processing of a
+signal an adversary could transmit. The remaining four rest on it: the second supplies
+the adversary's choice set, the third and fourth measure what existing detectors do
+against that choice set and what a failure costs, and the fifth relates the result to
+the feature space evaluation the literature more commonly reports.
 
-  \item A library of 209 transmitter settings spanning counterfeit power, code pull-off
-  rate and carrier alignment, of which 126 satisfy the published conditions for receiver
-  takeover. The library expresses the adversary's choice set as data and separates
-  transmissions that capture a receiver from those that do not.
+\begin{enumerate}
+  \item \textbf{An evaluation methodology in which every attack is a transmitted
+  waveform.} Each attack is synthesised as radio samples, summed with authentic
+  recordings and tracked by a software receiver, so that the detector inputs are
+  produced by receiver processing of a transmittable waveform. The generator is
+  validated by reproducing a recorded attack whose construction is published.
 
-  \item A comparative evaluation of fourteen detectors, eight classical and six deep,
-  against that library at a common operating point, reporting for each detector the number
-  of transmitted attacks it fails to flag together with the false alarm rate it incurs on
-  authentic data.
+  \item \textbf{A library of transmitted attacks.} Two hundred and nine transmitter
+  settings spanning counterfeit power, code pull-off rate and carrier alignment, of
+  which 126 satisfy the published conditions for receiver takeover. The library
+  expresses the adversary's choice set as data and separates transmissions that
+  capture a receiver from those that do not.
 
-  \item A navigation domain measurement establishing that a missed attack reaches the
-  position and timing solution, obtained by propagating one such attack through the
-  navigation stage and comparing the induced clock drift against the rate the transmitter
-  was configured to impose.
-\end{itemize}
+  \item \textbf{A comparative evaluation of fourteen detectors,} eight classical and
+  six deep, against that library at a common operating point, reporting for each
+  detector the number of transmitted attacks it fails to flag together with the false
+  alarm rate it incurs on authentic data, with exact binomial intervals on every
+  count.
+
+  \item \textbf{A navigation domain measurement} establishing that a missed attack
+  reaches the position and timing solution, obtained by propagating one such attack
+  through the navigation stage and comparing the induced clock drift against the rate
+  the transmitter was configured to impose.
+
+  \item \textbf{A comparison against feature space evaluation,} in which the same
+  detectors are attacked by perturbing measurements directly. The two views agree on
+  which detectors are fragile, and disagree on the support vector machine, whose
+  apparent resistance is accounted for by its false alarm rate. A perturbation size
+  reported without that rate would invert the conclusion.
+\end{enumerate}
 
 \subsection{Organisation}
 
@@ -296,8 +318,8 @@ recurrent alternatives \citep{jullian2022deep}. Real time operation has been add
 \citep{li2025realtime}, as has enlargement of the training distribution by generative
 augmentation \citep{chen2025cgan}. Reported detection accuracy across this body of work is
 consistently high, and the architectures achieving it are heterogeneous, which suggests
-that the reported figures are substantially determined by the evaluation corpora rather
-than by architectural choices.
+that the reported figures are substantially determined by the evaluation corpora and
+not by architectural choices.
 
 \subsection{Generalization beyond the training attacks}
 \label{sec:rw_generalization}
@@ -319,7 +341,7 @@ The appeal of the third approach is that a physically grounded invariant does no
 on which attacks were recorded.
 
 This line of work addresses distribution shift, in which the test attacks are drawn from a
-different distribution than the training attacks but are still drawn rather than chosen.
+different distribution than the training attacks but are still drawn and not chosen.
 Adversarial selection is a distinct axis: the attack is not sampled from any distribution
 but optimised against the deployed system. The two questions are complementary, and a
 library of transmitted attacks of the kind constructed here provides material against
@@ -409,7 +431,7 @@ operating inside a receiver would have access to precisely this set.
 \subsection{Observable measurements}
 \label{sec:features}
 
-Table~\ref{tab:features} lists the nine observables, exported once per epoch for each
+Table~\ref{tab:features} lists the nine measurements, exported once per epoch for each
 tracked satellite.
 
 \begin{table}[t]
@@ -447,7 +469,6 @@ Figure~\ref{fig:featdist} shows the marginal distribution of each observable und
 classes; the classes overlap in every single observable, which is why a learned detector
 that combines them can outperform any univariate threshold.
 
-% Figure source: figures_src/fig_legacy.py
 \begin{figure*}[t]
 \centering
 \includegraphics[width=\textwidth]{fig03_feature_distributions.pdf}
@@ -482,11 +503,10 @@ Section~\ref{sec:res_compare}, and is treated there.
 Figure~\ref{fig:timehistory} shows the joint evolution of the observables for one satellite
 across the onset of a recorded attack.
 
-% Figure source: figures_src/fig_legacy.py
 \begin{figure*}[t]
 \centering
 \includegraphics[width=\textwidth]{fig02_signature_timehistory_prn23.pdf}
-\caption{Time history of the measurements for one satellite, PRN 23, across the onset of a recorded attack. The measurements move together as the counterfeit takes over the tracking loops, which is the signature a detector reads.}
+\caption{Time history of the measurements for one satellite, pseudorandom noise (PRN) code 23, across the onset of a recorded attack. The measurements move together as the counterfeit takes over the tracking loops, which is the signature a detector reads.}
 \label{fig:timehistory}
 \end{figure*}
 
@@ -518,7 +538,7 @@ accuracy.
 This section defines the adversary, the parameters under its control, the conditions its
 transmission must satisfy to capture a receiver, and the knowledge it is assumed to
 possess. Every adversary action in this study is a choice of transmitter settings, so the
-threat model is stated in terms of a transmitter rather than in terms of a displacement in
+threat model is stated in terms of a transmitter and not in terms of a displacement in
 a feature space.
 
 \subsection{Adversary model and objective}
@@ -581,15 +601,24 @@ is already tracking the authentic signals. Two conditions govern capture
 
 The counterfeit must arrive aligned with the authentic signal in code phase, carrier phase
 and Doppler frequency, so that the victim's correlator observes a single undistorted peak
-rather than two competing peaks. A misaligned counterfeit does not transfer the tracking
+and not two competing peaks. A misaligned counterfeit does not transfer the tracking
 loops; it perturbs the victim's observables without displacing its position or time
-solution, and therefore constitutes interference rather than spoofing. The counterfeit must
+solution, and therefore constitutes interference and not spoofing. The counterfeit must
 additionally exceed the authentic signal in received power, since code tracking follows the
 dominant correlation peak. In practice the power advantage employed is small, typically a
 few decibels, because a large advantage is itself observable in the receiver's automatic
-gain control and in the reported $C/N_0$.
+gain control and in the reported $C/N_0$. This second condition is the established one
+and is adopted here, though it may not be necessary: a spoofing method has since been
+reported that uses controlled destructive multipath to pull the code loop at a power
+below the authentic signal \citep{liu2026dimas}. Requiring the power advantage therefore
+makes the attack library used here a conservative subset of what an adversary may
+transmit.
 
-Only once both conditions hold does the adversary begin to displace the code. These
+Only once both conditions hold does the adversary begin to displace the code. The
+experiments in this paper begin from that point: the generator is seeded from the victim's
+own tracking so that the alignment condition is satisfied by construction, and what is
+measured is detector behaviour after capture has been achieved and not the difficulty
+of achieving it. These
 conditions define the subset of the parameter space in which an attack is operative, and
 Section~\ref{sec:method} applies them to partition the swept library into transmissions
 that capture the receiver and transmissions that do not. Detector performance is reported
@@ -696,7 +725,6 @@ epoch to the next. No projection onto a set of allowed values is applied at any 
 because there is no perturbation to project.
 Figure~\ref{fig:rxvalid} shows the checks on the receiver itself.
 
-% Figure source: figures_src/fig_legacy.py
 \begin{figure*}[t]
 \centering
 \includegraphics[width=\textwidth]{fig04_receiver_validation.pdf}
@@ -927,7 +955,7 @@ meeting the recall floor.
 \begin{table*}[t]
 \centering
 \caption{Every detector at the common operating point of Equation~\ref{eq:oppoint},
-ordered by false alarm rate. Passed counts the transmitted take over attacks, out of
+ordered by false alarm rate. Passed counts the transmitted takeover attacks, out of
 126, for which the detector flags fewer than half the spoofed samples. Lowest detection
 is the smallest fraction of an attack's samples the detector flagged. The final column
 is the smallest perturbation of the measurements alone that crosses the decision
@@ -967,12 +995,24 @@ is last on both counts, at 0.682 and 0.960.
 The false alarm rates deserve attention on their own. Across the fourteen detectors they
 run from 0.337 to 0.960. Even the best of them flags about a third of authentic samples
 as spoofed. On this evidence no detector in the study is usable as a standalone
-single epoch integrity monitor, before any attacker is considered. A fielded monitor
+single epoch integrity monitor, before any attacker is considered.
+
+These figures are lower than those commonly reported for learned GNSS spoofing detectors,
+and two deliberate choices account for the difference. The first is the operating rule:
+Equation~\ref{eq:oppoint} fixes a recall floor of 0.95 and accepts whatever false alarm
+rate that costs, which is the safety first choice for an integrity monitor and is more
+severe than reporting the threshold that maximises accuracy. The second is the
+partitioning described in Section~\ref{sec:signal}: training, validation and test are
+disjoint contiguous blocks with a margin discarded at each boundary, because adjacent
+epochs of the same satellite are strongly correlated and a randomised split places near
+duplicates of the same observation on both sides of it. A randomised split raises every
+reported figure without any change to the detector, so numbers obtained under the two
+protocols are not comparable. The values here should be read as what these architectures
+achieve under a severe operating rule and a partition that does not leak. A fielded monitor
 would combine decisions over several epochs, trading detection latency for a lower rate
 of false alarms, and the per epoch numbers reported here are the input to such a scheme.
 Figure~\ref{fig:oppoint} shows the clean scores at that operating point.
 
-% Figure source: figures_src/fig_legacy.py
 \begin{figure}[t]
 \centering
 \includegraphics[width=\linewidth]{fig05_detection_operating_point.pdf}
@@ -994,7 +1034,7 @@ Table~\ref{tab:main} and Figure~\ref{fig:detection} report the outcome.
 \begin{figure}[t]
 \centering
 \includegraphics[width=\linewidth]{fig_detection_vs_transmitted.pdf}
-\caption{Transmitted take over attacks each detector fails to flag, out of 126. The
+\caption{Transmitted takeover attacks each detector fails to flag, out of 126. The
 clean false alarm rate each detector pays at the common operating point is printed
 beside its bar. The detector with the lowest false alarm rate fails to flag the most
 attacks.}
@@ -1024,13 +1064,71 @@ lowest false alarm rates are passed by 43.7 and 21.4 percent of the attacks. The
 that are never passed carry false alarm rates that rule them out.
 Figure~\ref{fig:integrity} places the detectors on the two axes an integrity monitor trades.
 
-% Figure source: figures_src/fig_legacy.py
 \begin{figure}[t]
 \centering
 \includegraphics[width=\linewidth]{fig12_integrity_plane.pdf}
 \caption{Each detector placed by the two risks a navigation integrity monitor trades. The horizontal axis is the false alarm rate on authentic data, which drives continuity risk. The vertical axis is the missed detection rate, which drives integrity risk. No detector reaches the lower left corner.}
 \label{fig:integrity}
 \end{figure}
+
+\subsection{Statistical support}
+\label{sec:res_stats}
+
+Each detector's evasion count is a binomial outcome on a common denominator of 126, so
+Table~\ref{tab:th_ci} reports an exact Clopper-Pearson interval for each. The exact
+interval is used in place of the normal approximation because five detectors evade nothing,
+and the Wald interval is degenerate and badly undercovers at the boundary
+\citep{brown2001interval}.
+
+\begin{table}[t]
+\centering
+\caption{Evasion counts with exact 95 percent Clopper-Pearson intervals, out of 126
+transmitted takeover attacks, ordered by count.}
+\label{tab:th_ci}
+\footnotesize
+\begin{tabular}{@{}p{3.9cm}rrl@{}}
+\toprule
+Detector & Evaded & Fraction & 95\% interval \\
+\midrule
+Random forest & 55 & 0.437 & [0.348, 0.528] \\
+Support vector machine & 53 & 0.421 & [0.333, 0.512] \\
+XGBoost & 28 & 0.222 & [0.153, 0.305] \\
+Gradient boosting & 27 & 0.214 & [0.146, 0.296] \\
+LightGBM & 27 & 0.214 & [0.146, 0.296] \\
+Decision tree & 21 & 0.167 & [0.106, 0.243] \\
+Transformer & 18 & 0.143 & [0.087, 0.216] \\
+Multilayer perceptron & 14 & 0.111 & [0.062, 0.179] \\
+Temporal convolutional & 4 & 0.032 & [0.009, 0.079] \\
+Nearest neighbour & 0 & 0.000 & [0.000, 0.029] \\
+Long short term memory & 0 & 0.000 & [0.000, 0.029] \\
+Bidirectional LSTM & 0 & 0.000 & [0.000, 0.029] \\
+Convolutional network & 0 & 0.000 & [0.000, 0.029] \\
+Convolutional recurrent & 0 & 0.000 & [0.000, 0.029] \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The relation between clean performance and resistance is reported as a contrast and not
+as a monotone trend, because only the contrast is supported. Taking the four detectors with
+the highest clean $F_1$ against the remaining ten, the first group is evaded on 114 of 504
+detector-attack pairs and the second on 133 of 1260, that is 0.226 against 0.106. Fisher's
+exact test on that table gives $p = 2.8 \times 10^{-10}$. The random forest alone, at 55 of
+126, is evaded more often than gradient boosting at 27 of 126, with $p = 2.6 \times
+10^{-4}$, and more often than the five detectors that evade nothing, whose interval
+[0.000, 0.029] does not approach its own [0.348, 0.528].
+
+The monotone rank relationship across all fourteen detectors is weaker and is not
+significant. Spearman's rank correlation between clean $F_1$ and evaded fraction is
+$\rho = +0.41$, with a permutation $p$ of 0.15 from 200\,000 random relabellings. The
+reason is visible in Table~\ref{tab:th_ci}: the support vector machine has the lowest clean
+$F_1$ in the study and the second highest evasion count, which breaks any monotone
+ordering. Excluding it, as a declared sensitivity analysis and on the ground that its false
+alarm rate of 0.960 makes it degenerate as a monitor, gives $\rho = +0.70$ with a
+permutation $p$ of 0.010.
+
+The claim this study supports is therefore that the detectors which perform best on clean
+data are evaded substantially and significantly more often than the rest, and not that
+evasion increases monotonically with clean performance across every architecture.
 
 \subsection{A single transmitter setting evading six detectors}
 \label{sec:res_single}
@@ -1072,6 +1170,10 @@ receiver clock at
 \label{eq:clockrate}
 \end{equation}
 
+Equation~\ref{eq:clockrate} is a prediction and not a fit: it follows from the commanded
+pull-off rate and the chip length alone, with no free parameter, so the measurement either
+matches it or does not.
+
 The receiver's own clock drift is measured first, by running the same window with the
 counterfeit switched off. It is 0.12 nanoseconds per second, so it is negligible against
 the rates under test, and it is subtracted from every figure below.
@@ -1106,7 +1208,6 @@ clock at the rate the transmitter was set to impose, one of them through a takeo
 one without.
 Figure~\ref{fig:ladder} sets out what each kind of attack is assumed to know.
 
-% Figure source: figures_src/static/fig_threat_ladder.png (hand made)
 \begin{figure*}[t]
 \centering
 \includegraphics[width=\textwidth]{fig_threat_ladder.png}
@@ -1135,7 +1236,6 @@ detector being passed by 53 of the 126 attacks. Reading the perturbation size wi
 false alarm rate would have inverted the conclusion.
 Figure~\ref{fig:fragility} gives the resulting ranking.
 
-% Figure source: figures_src/fig_legacy.py
 \begin{figure}[t]
 \centering
 \includegraphics[width=\linewidth]{fig06_fragility_ranking.pdf}
@@ -1144,7 +1244,6 @@ Figure~\ref{fig:fragility} gives the resulting ranking.
 \end{figure}
 Figure~\ref{fig:rankinv} compares that ranking against the clean one.
 
-% Figure source: figures_src/fig_legacy.py
 \begin{figure}[t]
 \centering
 \includegraphics[width=\linewidth]{fig10_rank_inversion.pdf}
@@ -1160,15 +1259,23 @@ Figure~\ref{fig:rankinv} compares that ranking against the clean one.
 Three findings follow from Section~\ref{sec:results}, each obtained against attacks that
 were synthesised as waveforms and tracked through the receiver.
 
-Clean detection performance does not predict resistance to transmitted attack, and at the
-top of the ranking the two orderings are close to inverted. The random forest attains both
-the highest clean $F_1$ score and the lowest false alarm rate of the fourteen detectors,
-and it is nonetheless evaded by 43.7 percent of the transmitted takeover attacks. This is
-not a marginal effect confined to one model: the four best detectors on clean data occupy
-four of the five worst positions under transmitted attack. Because all fourteen detectors
-are read at the same recall floor, the inversion cannot be attributed to differences in
-threshold placement, and because the attacks were selected without reference to any
-detector, it cannot be attributed to adversarial optimisation against a particular model.
+Clean detection performance does not predict resistance to transmitted attack. The random
+forest attains both the highest clean $F_1$ score and the lowest false alarm rate of the
+fourteen detectors, and it is nonetheless evaded by 43.7 percent of the transmitted
+takeover attacks, with an exact interval of [0.348, 0.528]. The effect is not confined to
+one model: the four detectors with the highest clean $F_1$ are evaded on 0.226 of their
+detector-attack pairs against 0.106 for the remaining ten, a difference significant at
+$p = 2.8 \times 10^{-10}$. Because all fourteen detectors are read at the same recall
+floor, this cannot be attributed to differences in threshold placement, and because the
+attacks were selected without reference to any detector, it cannot be attributed to
+adversarial optimisation against a particular model.
+
+The relationship is a contrast between groups and not a monotone trend across
+architectures. Section~\ref{sec:res_stats} reports a Spearman correlation of $+0.41$
+between clean $F_1$ and evaded fraction which is not significant at $n = 14$, because the
+support vector machine combines the worst clean score with the second highest evasion
+count. Both results are reported, and the contrast is the one the
+evidence supports.
 
 Where resistance does appear, it is purchased with false alarms. Five detectors flag every
 one of the 126 attacks, and those same five flag between 46 and 74 percent of authentic
@@ -1179,7 +1286,6 @@ GNSS setting. Figure~\ref{fig:tradeoff} shows the same point across the full set
 criteria a deployment decision weighs: no detector dominates on all of them, and the
 orderings induced by different criteria disagree, so no single scalar ranks the set.
 
-% Figure source: figures_src/fig_legacy.py
 \begin{figure}[t]
 \centering
 \includegraphics[width=\linewidth]{fig11_tradeoff_parallel.pdf}
@@ -1187,7 +1293,7 @@ orderings induced by different criteria disagree, so no single scalar ranks the 
 \label{fig:tradeoff}
 \end{figure}
 
-A missed detection is consequential rather than benign. The attack propagated through the
+A missed detection is consequential and not benign. The attack propagated through the
 navigation stage drove the receiver clock at the rate the transmitter was configured to
 impose, to within 0.05 percent, while the detector with the best clean performance
 classified 98.8 percent of its samples as authentic. Detection failure and navigation
@@ -1208,7 +1314,7 @@ it.
 
 Section~\ref{sec:res_compare} quantifies what this changes. For the tree based detectors
 the feature space and waveform level evaluations agree, and the fragility those models
-exhibit is a property of the models rather than of either evaluation. For the support
+exhibit is a property of the models and not of either evaluation. For the support
 vector machine the two disagree entirely: its minimum perturbation is the largest in the
 study, which taken alone would identify it as the most robust detector, yet it is evaded by
 53 of the 126 transmitted attacks. Its false alarm rate of 0.960 reconciles the two
@@ -1223,7 +1329,6 @@ either an entire attack scenario or individual satellites. Recall falls in both 
 which indicates that the detectors depend on conditions present in their training data even
 before an adversary is introduced.
 
-% Figure source: figures_src/fig_legacy.py
 \begin{figure*}[t]
 \centering
 \includegraphics[width=\textwidth]{fig08_generalization.pdf}
@@ -1249,13 +1354,19 @@ adversary. At a recall floor of 0.95 they span 0.337 to 0.960, so no detector in
 is usable as a standalone single epoch integrity monitor even in the absence of an attacker.
 A deployed monitor would necessarily combine decisions across epochs and across satellites,
 trading detection latency against alarm rate, and the per epoch quantities reported here
-are the inputs to such a scheme rather than a substitute for it.
+are the inputs to such a scheme and not a substitute for it.
 
 \subsection{Scope and limitations}
 
 The adversary is restricted in the four respects set out in Section~\ref{sec:threat}, and
 each restriction reduces its capability, so the failure rates reported are a lower bound on
-what an unrestricted adversary could achieve.
+what an unrestricted adversary could achieve. The power condition illustrates the point.
+Requiring the counterfeit to exceed the authentic signal follows the established account
+of capture, and it is one of the two conditions, with the code being dragged, that select
+126 of the 209 swept settings as operative. Capture at lower power has since been reported by other means
+\citep{liu2026dimas}, which would enlarge the operative subset and so enlarge the set of
+transmissions a detector must withstand. Relaxing the condition could therefore only
+raise the counts reported here.
 
 The study covers one signal, GPS L1 C/A, and one stationary receiver at a surveyed
 location. Whether the same detectors behave equivalently on other civil signals, or on a
@@ -1265,7 +1376,7 @@ signal requires the corresponding spreading code and receiver configuration.
 
 The navigation domain result rests on a common pull-off applied to all satellites, which a
 stationary receiver absorbs into its clock estimate. An adversary seeking to displace the
-reported position rather than the clock would apply differing offsets across satellites,
+reported position and not the clock would apply differing offsets across satellites,
 and that case is not measured here.
 
 One documented difference between the generated attack and the recorded one is reported in
@@ -1288,7 +1399,7 @@ relation that authentic signals satisfy, as has been done for code carrier consi
 the signals against which such a detector would need to be evaluated, including the
 settings that hold received power constant through Equation~\ref{eq:neutral}. The second is
 to construct a detector whose behaviour under bounded input change can be certified in
-advance rather than estimated after the fact \citep{cohen2019certified}. Both lie outside
+advance and not estimated afterwards \citep{cohen2019certified}. Both lie outside
 the scope of the present study, which characterises the behaviour of existing detectors.
 
 \section{Conclusion}
@@ -1306,10 +1417,13 @@ Fourteen detectors, eight classical and six deep, were placed at a common operat
 defined by a recall floor of 0.95 on clean validation data, and evaluated against 126
 transmitter settings satisfying the published conditions for receiver takeover.
 
-Clean detection performance was found to be a poor predictor of resistance, and at the top
-of the ranking the two orderings were close to inverted. The random forest attained the
-highest clean $F_1$ score at 0.833 and the lowest false alarm rate at 0.337, and failed to
-flag 55 of the 126 attacks, flagging 0.1 percent of the spoofed samples of one of them. The
+Clean detection performance was found to be a poor predictor of resistance. The random
+forest attained the highest clean $F_1$ score at 0.833 and the lowest false alarm rate at
+0.337, and failed to flag 55 of the 126 attacks, flagging 0.1 percent of the spoofed
+samples of one of them. Across the set, the four detectors with the highest clean $F_1$
+were evaded at 0.226 of their detector-attack pairs against 0.106 for the remaining ten,
+significant at $p = 2.8 \times 10^{-10}$, although the monotone rank correlation across all
+fourteen is not significant and is reported as such. The
 five detectors that flagged every attack did so while flagging between 46 and 74 percent of
 authentic samples, a regime in which the resistance is not operationally available. Across
 all fourteen detectors, false alarm rates at this operating point ranged from 0.337 to
@@ -1372,13 +1486,18 @@ licence.
 The authors declare that they have no competing interests.
 
 \bmhead{Funding}
-Removed for double-anonymous review; see title page.
+The authors received no specific funding for this work.
 
 \bmhead{Authors' contributions}
-Removed for double-anonymous review; see title page.
+J.S.O. conceived the study, developed the methodology, implemented the experiments,
+analysed the results and wrote the manuscript. W.A.A. supervised the work and
+reviewed the manuscript. A.O.A. reviewed the manuscript. All authors read and
+approved the final manuscript.
 
 \bmhead{Acknowledgements}
-Removed for double-anonymous review; see title page.
+We thank the University of Texas at Austin Radionavigation Laboratory for the Texas
+Spoofing Test Battery recordings and the Finnish Geospatial Research Institute for
+the open-source FGI-GSRx software-defined receiver used in this study.
 
 \bibliography{references}
 
