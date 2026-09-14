@@ -73,7 +73,12 @@ solution, and therefore constitutes interference and not spoofing. The counterfe
 additionally exceed the authentic signal in received power, since code tracking follows the
 dominant correlation peak. In practice the power advantage employed is small, typically a
 few decibels, because a large advantage is itself observable in the receiver's automatic
-gain control and in the reported $C/N_0$.
+gain control and in the reported $C/N_0$. This second condition is the established one
+and is adopted here, though it may not be necessary: a spoofing method has since been
+reported that uses controlled destructive multipath to pull the code loop at a power
+below the authentic signal \citep{liu2026dimas}. Requiring the power advantage therefore
+makes the attack library used here a conservative subset of what an adversary may
+transmit.
 
 Only once both conditions hold does the adversary begin to displace the code. The
 experiments in this paper begin from that point: the generator is seeded from the victim's
