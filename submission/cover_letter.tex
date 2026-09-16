@@ -11,91 +11,72 @@
 
 \vspace{1em}
 
-\noindent We submit our manuscript, ``Adversarial Vulnerability of Machine Learning GNSS
-Spoofing Detectors to Transmitted Spoofing Signals,'' for consideration as an Original
-Article in \emph{Satellite Navigation}.
+\noindent We would like to submit our manuscript, ``Adversarial Vulnerability of Machine
+Learning GNSS Spoofing Detectors to Transmitted Spoofing Signals,'' for consideration as an
+Original Article in \emph{Satellite Navigation}.
 
 \vspace{1em}
-\noindent\textbf{The problem the manuscript addresses}
+\noindent\textbf{Why this manuscript belongs in \emph{Satellite Navigation}}
 
 \vspace{0.5em}
 
-\noindent Machine learning spoofing detectors are moving from research prototypes towards
+\noindent Machine learning spoofing detectors are moving from research prototypes toward
 integration in receivers, and the accuracies reported for them are high. Those accuracies
-are obtained against fixed corpora of recorded attacks. A recorded attack does not respond
-to the detector being tested, so what such an evaluation establishes is performance against
-the attacks someone else already chose to record. A deployed receiver faces an adversary
-who selects what to transmit.
+are obtained against fixed corpora of recorded attacks, which do not respond to the
+detector being tested, while a deployed receiver faces an adversary that chooses what to
+transmit. Our manuscript evaluates fourteen detectors, eight classical and six deep,
+against attacks that are radio signals selected by an adversary. A counterfeit GPS L1 C/A
+waveform is synthesised at sample level, summed with authentic recordings from the Texas
+Spoofing Test Battery and tracked by an open software receiver, so the observables each
+detector reads are produced by receiver processing of a transmittable signal. The generator
+is validated by reproducing a recorded attack whose construction is published, and every
+detector is held at one common operating point with the false alarm rate it pays reported
+beside every result.
 
-Closing that gap requires the attack to be a signal. Work that perturbs receiver
-observables directly must argue separately that the perturbation corresponds to something
-a transmitter could produce, and the argument is difficult to make because several
-observables are computed from the same correlator accumulations within one integration
-period: displacing one while holding the others fixed specifies a receiver state no
-incident waveform produces.
+The central finding is that clean detection performance is a poor predictor of resistance
+to transmitted attacks, and that near the top of the ranking the two orderings run close to
+inverted: the detector with the highest clean $F_1$ score and the lowest false alarm rate
+is evaded by 55 of 126 attacks, while the detectors evading none pay false alarm rates of
+46 to 74 percent on authentic data. A missed attack is followed through the navigation
+stage and shown to drive the receiver clock at 48.89 nanoseconds per second against a
+commanded 48.87, so detection failure is not confined to the classifier. This speaks
+directly to resilient positioning, navigation and timing, a core scope of the journal, and
+to the growing literature on learning based GNSS spoofing detection that the journal has
+published.
 
 \vspace{1em}
-\noindent\textbf{What we did}
+\noindent\textbf{Policy issues}
 
 \vspace{0.5em}
 
-\noindent Every attack in this study is constructed as a radio waveform. A counterfeit
-GPS L1 C/A signal is synthesised at sample level, summed with authentic recordings, passed
-through a model of the receiver front end and tracked by an open software receiver, so the
-observables each detector reads are produced by receiver processing of a transmittable
-signal. Realizability is settled by the construction of the experiment, not by an argument
-attached to it. The generator is validated by reproducing a recorded attack whose
-construction is published.
-
-We sweep 209 transmitter settings spanning counterfeit power, code pull-off rate and
-carrier alignment, of which 126 satisfy the published conditions for receiver takeover, and
-measure fourteen detectors, eight classical and six deep, against that subset. Every
-detector is held at one common operating point, and the false alarm rate each pays is
-reported beside every result, so no apparent robustness is credited to a displaced
-threshold.
+\noindent We are not aware of any policy issues relevant to this submission.
 
 \vspace{1em}
-\noindent\textbf{What we found}
+\noindent\textbf{Competing interests}
 
 \vspace{0.5em}
 
-\noindent Clean detection performance is a poor predictor of resistance to transmitted
-attacks, and near the top of the ranking the two orderings run close to inverted. The
-detector with the highest clean $F_1$ and the lowest false alarm rate fails to flag 55 of
-the 126 attacks. Where resistance does appear it is purchased with false alarm rates of 46
-to 74 percent on authentic data, which is not operationally available to a receiver. And
-detection failure is not confined to the classifier: following one missed attack through
-the navigation stage, the receiver clock is driven at 48.89 nanoseconds per second against
-a commanded 48.87.
+\noindent The authors declare that they have no competing interests.
 
 \vspace{1em}
-\noindent\textbf{Why \emph{Satellite Navigation}}
-
-\vspace{0.5em}
-
-\noindent The manuscript addresses resilient positioning, navigation and timing, a core
-topic of the journal, and connects directly to the literature on learning based GNSS
-spoofing detection that the journal has published. Its findings are stated in the terms a
-receiver designer must weigh, namely detection against false alarms and the consequence of
-a miss for the position and timing solution. The library of transmitted attacks is a
-reusable artefact for evaluating physics constrained and certified detectors, which we
-expect to be of direct use to the journal's readership.
-
-\vspace{1em}
-\noindent\textbf{Declarations}
+\noindent\textbf{Prior publication and authorship}
 
 \vspace{0.5em}
 
 \noindent This manuscript has not been published and is not under consideration for
 publication elsewhere, in whole or in part. All authors have seen and approved the
 manuscript in its current form and agree to its submission to \emph{Satellite Navigation}.
-The authors declare that they have no competing interests, and we are not aware of any
-policy issues relevant to this submission. This submission is not intended for a special
-issue.
+
+\vspace{1em}
+\noindent\textbf{Special issue}
+
+\vspace{0.5em}
+
+\noindent This submission is not intended for a special issue.
 
 \vspace{1em}
 
-\noindent Thank you for considering our manuscript.
+\noindent Thank you for considering our manuscript. We look forward to your response.
 
 \vspace{1.5em}
 

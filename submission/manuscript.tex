@@ -201,42 +201,40 @@ receiver's own drift of 0.12 nanoseconds per second has been measured and remove
 
 \subsection{Contributions}
 
-The principal contribution is the evaluation methodology, because the findings that
-follow hold only if the detector inputs are produced by receiver processing of a
-signal an adversary could transmit. The remaining four rest on it: the second supplies
-the adversary's choice set, the third and fourth measure what existing detectors do
-against that choice set and what a failure costs, and the fifth relates the result to
-the feature space evaluation the literature more commonly reports.
+The principal contribution is the evaluation methodology, because the findings that follow
+hold only if the detector inputs are produced by receiver processing of a signal an
+adversary could transmit. The remaining three rest on it: the second supplies the
+adversary's choice set, and the third and fourth measure what existing detectors do against
+that choice set and what a failure costs.
 
 \begin{enumerate}
   \item \textbf{An evaluation methodology in which every attack is a transmitted
-  waveform.} Each attack is synthesised as radio samples, summed with authentic
-  recordings and tracked by a software receiver, so that the detector inputs are
-  produced by receiver processing of a transmittable waveform. The generator is
-  validated by reproducing a recorded attack whose construction is published.
+  waveform.} Each attack is synthesised as radio samples, summed with authentic recordings
+  and tracked by a software receiver, so that the detector inputs are produced by receiver
+  processing of a transmittable waveform and realizability is settled by the construction
+  of the experiment. The generator is validated by reproducing a recorded attack whose
+  construction is published.
 
-  \item \textbf{A library of transmitted attacks.} Two hundred and nine transmitter
-  settings spanning counterfeit power, code pull-off rate and carrier alignment, of
-  which 126 satisfy the published conditions for receiver takeover. The library
-  expresses the adversary's choice set as data and separates transmissions that
-  capture a receiver from those that do not.
+  \item \textbf{A library of transmitted attacks that expresses the adversary's choice
+  set as data.} The sweep covers 209 transmitter settings in counterfeit power, code
+  pull-off rate and carrier alignment, of which 126 satisfy the published conditions for
+  receiver takeover. Separating the two is what allows a detector to be scored only on
+  transmissions that would have captured a receiver.
 
-  \item \textbf{A comparative evaluation of fourteen detectors,} eight classical and
-  six deep, against that library at a common operating point, reporting for each
-  detector the number of transmitted attacks it fails to flag together with the false
-  alarm rate it incurs on authentic data, with exact binomial intervals on every
-  count.
+  \item \textbf{Evidence that clean detection performance does not predict resistance
+  to transmitted attacks.} Fourteen detectors, eight classical and six deep, are measured
+  against that library at a common operating point. The four detectors ranked highest on
+  clean data are evaded significantly more often than the remaining ten, and the detectors
+  evading no attack pay false alarm rates of 46 to 74 percent on authentic data. Every
+  count carries an exact binomial interval, and the contrast is reported as a difference
+  between the top of the ranking and the rest, which the data support, and not as a
+  monotone trend across all fourteen, which they do not.
 
-  \item \textbf{A navigation domain measurement} establishing that a missed attack
-  reaches the position and timing solution, obtained by propagating one such attack
-  through the navigation stage and comparing the induced clock drift against the rate
-  the transmitter was configured to impose.
-
-  \item \textbf{A comparison against feature space evaluation,} in which the same
-  detectors are attacked by perturbing measurements directly. The two views agree on
-  which detectors are fragile, and disagree on the support vector machine, whose
-  apparent resistance is accounted for by its false alarm rate. A perturbation size
-  reported without that rate would invert the conclusion.
+  \item \textbf{A navigation domain measurement establishing that a missed attack
+  reaches the position and timing solution.} One evaded attack is propagated through the
+  navigation stage, and the clock drift it induces is compared against the rate the
+  transmitter was configured to impose. Detection failure is therefore shown to be a
+  navigation failure and not only a classifier error.
 \end{enumerate}
 
 \subsection{Organisation}
@@ -1446,18 +1444,14 @@ and certified detectors.
 
 \section*{List of abbreviations}
 \begin{description}
-\item[CNN] convolutional neural network
+\item[C/A] coarse/acquisition
 \item[C/N$_0$] carrier-to-noise density ratio
-\item[DLL] delay-lock loop
 \item[FGI] Finnish Geospatial Research Institute
-\item[FLL] frequency-lock loop
 \item[GNSS] Global Navigation Satellite System
 \item[GPS] Global Positioning System
 \item[LSTM] long short-term memory
-\item[PLL] phase-lock loop
 \item[PNT] positioning, navigation and timing
 \item[PRN] pseudo-random noise
-\item[TEXBAT] Texas Spoofing Test Battery
 \end{description}
 
 \section*{Declarations}
