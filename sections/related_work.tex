@@ -87,11 +87,11 @@ One response treats detection as one class learning, fitting only the authentic
 distribution so that any sufficiently atypical observation is flagged, which removes the
 dependence on a catalogue of attack examples \citep{iqbal2024deep}. A second augments the
 training set with synthetically generated attacks in order to widen the distribution the
-detector has seen \citep{chen2025cgan}. A third constrains the detector with physics:
-code carrier consistency, the same relation the classical consistency test evaluates, has
-been imposed as a training constraint so that the network is required to respect a
-relation authentic signals satisfy, and this is reported to preserve accuracy across
-held out scenarios on which unconstrained detectors degrade \citep{song2026generalized}.
+detector has seen \citep{chen2025cgan}. A third constrains the detector with physics.
+Code carrier consistency, the same relation the classical consistency test evaluates, has
+been imposed as a training constraint, so the network must respect a relation authentic
+signals satisfy. This is reported to preserve accuracy across held out scenarios on which
+unconstrained detectors degrade \citep{song2026generalized}.
 The appeal of the third approach is that a physically grounded invariant does not depend
 on which attacks were recorded.
 

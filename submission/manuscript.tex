@@ -92,12 +92,11 @@ receiver operating nominally while the solution it reports is wrong, so the rece
 no internal evidence that anything has occurred and the attack must be identified while it
 is in progress \citep{psiaki2016gnss}. Capturing a receiver that is already tracking
 authentic signals is correspondingly more demanding than simply transmitting at higher
-power. The published procedure proceeds in three stages: the counterfeit is first aligned
-with the authentic signal in code phase, carrier phase and Doppler frequency, so that the
-victim's correlator sees a single undistorted peak; its power is then raised slightly above
-the authentic power, typically by a few decibels; and only then is the counterfeit dragged
-away from the authentic signal, carrying the tracking loops with it and moving the reported
-position or time \citep{psiaki2016gnss,kerns2014uav}. A counterfeit that omits the
+power. The published procedure has three stages \citep{psiaki2016gnss,kerns2014uav}. The counterfeit is first aligned with the authentic
+signal in code phase, carrier phase and Doppler frequency, so that the victim's correlator
+sees a single undistorted peak. Its power is then raised slightly above the authentic
+power, typically by a few decibels. Only then is it dragged away, carrying the tracking
+loops with it and moving the reported position or time. A counterfeit that omits the
 alignment stage does not capture the receiver at all, and acts only as interference. The
 consequence is that the attacker's freedom is bounded: not every combination of transmitter
 settings takes over a receiver, and an evaluation that ignores this distinction credits a
@@ -139,9 +138,9 @@ that chooses what to transmit, and the two quantities need not coincide.
 
 This paper evaluates fourteen detectors under attacks that are radio signals and not
 perturbations of a measurement table. A counterfeit GPS L1 C/A waveform is synthesised at
-sample level, summed with authentic recorded samples from the Texas Spoofing Test Battery
-\citep{humphreys2012texbat,humphreys2016texbatds78}, passed through a model of the receiver
-front end, and tracked by the FGI-GSRx software receiver \citep{fgigsrx}, published by the
+sample level and summed with authentic recorded samples from the Texas Spoofing Test Battery
+\citep{humphreys2012texbat,humphreys2016texbatds78}. The sum is passed through a model of the
+receiver front end and tracked by the FGI-GSRx software receiver \citep{fgigsrx}, published by the
 Finnish Geospatial Research Institute (FGI). The observables
 each detector reads are those the receiver computes while tracking that sum.
 Figure~\ref{fig:geometry} contrasts authentic operation with a spoofing attack, and
@@ -187,10 +186,10 @@ move together with its threshold, so detectors read at different thresholds are 
 comparable. The false alarm rate each detector pays to meet the recall floor is reported
 alongside every result.
 
-Three findings follow. First, ranking on clean data inverts under transmitted attack: the
+Three findings follow. First, ranking on clean data inverts under transmitted attack. The
 random forest attains the highest clean $F_1$ score, the harmonic mean of precision and
-recall, and the lowest false alarm rate, yet fails to flag 55 of the 126 transmitted attacks
-that capture the receiver, flagging as few as 0.1 percent of the spoofed samples of one of
+recall, and it also pays the lowest false alarm rate. It nonetheless fails to flag 55 of the
+126 transmitted attacks that capture the receiver, flagging as few as 0.1 percent of the spoofed samples of one of
 them. Second, the detectors that flag every attack achieve this only by flagging 46 to 74
 percent of authentic data, a regime in which a receiver would alarm almost continuously, so
 their apparent resistance is not operationally available. Across all fourteen, false alarm
@@ -337,11 +336,11 @@ One response treats detection as one class learning, fitting only the authentic
 distribution so that any sufficiently atypical observation is flagged, which removes the
 dependence on a catalogue of attack examples \citep{iqbal2024deep}. A second augments the
 training set with synthetically generated attacks in order to widen the distribution the
-detector has seen \citep{chen2025cgan}. A third constrains the detector with physics:
-code carrier consistency, the same relation the classical consistency test evaluates, has
-been imposed as a training constraint so that the network is required to respect a
-relation authentic signals satisfy, and this is reported to preserve accuracy across
-held out scenarios on which unconstrained detectors degrade \citep{song2026generalized}.
+detector has seen \citep{chen2025cgan}. A third constrains the detector with physics.
+Code carrier consistency, the same relation the classical consistency test evaluates, has
+been imposed as a training constraint, so the network must respect a relation authentic
+signals satisfy. This is reported to preserve accuracy across held out scenarios on which
+unconstrained detectors degrade \citep{song2026generalized}.
 The appeal of the third approach is that a physically grounded invariant does not depend
 on which attacks were recorded.
 
@@ -620,10 +619,9 @@ makes the attack library used here a conservative subset of what an adversary ma
 transmit.
 
 Only once both conditions hold does the adversary begin to displace the code. The
-experiments in this paper begin from that point: the generator is seeded from the victim's
-own tracking so that the alignment condition is satisfied by construction, and what is
-measured is detector behaviour after capture has been achieved and not the difficulty
-of achieving it. These
+experiments in this paper begin from that point. The generator is seeded from the victim's
+own tracking, so the alignment condition holds by construction. What is measured is how a
+detector behaves once capture has been achieved, not how hard it was to achieve. These
 conditions define the subset of the parameter space in which an attack is operative, and
 Section~\ref{sec:method} applies them to partition the swept library into transmissions
 that capture the receiver and transmissions that do not. Detector performance is reported
@@ -666,8 +664,8 @@ spoofer may possess in general.
 
 These restrictions determine how the results should be interpreted. Each detection failure
 reported in Section~\ref{sec:results} is obtained against this restricted adversary, so the
-measured vulnerability is a lower bound on the vulnerability to an adversary that relaxes
-any of them. The fourth restriction additionally fixes the observable consequence measured
+counts given are the fewest such an adversary would produce: relaxing any restriction
+enlarges what the adversary may transmit and can only increase them. The fourth restriction additionally fixes the observable consequence measured
 in Section~\ref{sec:res_nav}: because a common pull-off on all channels is absorbed by the
 clock, the induced error appears in the timing solution, and it is that error which is
 compared against the commanded rate.
@@ -1275,8 +1273,8 @@ floor, this cannot be attributed to differences in threshold placement, and beca
 attacks were selected without reference to any detector, it cannot be attributed to
 adversarial optimisation against a particular model.
 
-The relationship is a contrast between groups and not a monotone trend across
-architectures. Section~\ref{sec:res_stats} reports a Spearman correlation of $+0.41$
+What the data support is a difference between two groups of detectors, and not a steady
+trend running across all fourteen. Section~\ref{sec:res_stats} reports a Spearman correlation of $+0.41$
 between clean $F_1$ and evaded fraction which is not significant at $n = 14$, because the
 support vector machine combines the worst clean score with the second highest evasion
 count. Both results are reported, and the contrast is the one the
@@ -1364,8 +1362,8 @@ are the inputs to such a scheme and not a substitute for it.
 \subsection{Scope and limitations}
 
 The adversary is restricted in the four respects set out in Section~\ref{sec:threat}, and
-each restriction reduces its capability, so the failure rates reported are a lower bound on
-what an unrestricted adversary could achieve. The power condition illustrates the point.
+each restriction reduces its capability, so the failure rates reported are the fewest an
+unrestricted adversary would achieve and not an estimate of what it would achieve. The power condition illustrates the point.
 Requiring the counterfeit to exceed the authentic signal follows the established account
 of capture, and it is one of the two conditions, with the code being dragged, that select
 126 of the 209 swept settings as operative. Capture at lower power has since been reported by other means
@@ -1400,9 +1398,9 @@ is paid for on authentic data.
 
 Two directions remain open. The first is to require the detector to respect a physical
 relation that authentic signals satisfy, as has been done for code carrier consistency
-\citep{song2026generalized}; the library of transmitted attacks constructed here supplies
-the signals against which such a detector would need to be evaluated, including the
-settings that hold received power constant through Equation~\ref{eq:neutral}. The second is
+\citep{song2026generalized}. The library of transmitted attacks constructed here supplies
+the signals such a detector would have to be evaluated against, including the settings
+that hold received power constant through Equation~\ref{eq:neutral}. The second is
 to construct a detector whose behaviour under bounded input change can be certified in
 advance and not estimated afterwards \citep{cohen2019certified}. Both lie outside
 the scope of the present study, which characterises the behaviour of existing detectors.
@@ -1441,8 +1439,8 @@ detection failure and navigation domain effect on the same attack and the same r
 
 The adversary producing these results had no knowledge of the deployed detector, computed
 no gradient and issued no query, and was further restricted to a single signal, full
-satellite coverage and a stationary victim. Each restriction reduces its capability, so the
-reported failure rates constitute a lower bound.
+satellite coverage and a stationary victim. Each restriction reduces its capability, so an
+adversary holding none of them would evade at least as often as reported here.
 
 The broader implication is that detection accuracy measured on a fixed corpus of recorded
 attacks characterises that corpus. A detector intended to withstand an adversary requires

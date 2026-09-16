@@ -81,10 +81,9 @@ makes the attack library used here a conservative subset of what an adversary ma
 transmit.
 
 Only once both conditions hold does the adversary begin to displace the code. The
-experiments in this paper begin from that point: the generator is seeded from the victim's
-own tracking so that the alignment condition is satisfied by construction, and what is
-measured is detector behaviour after capture has been achieved and not the difficulty
-of achieving it. These
+experiments in this paper begin from that point. The generator is seeded from the victim's
+own tracking, so the alignment condition holds by construction. What is measured is how a
+detector behaves once capture has been achieved, not how hard it was to achieve. These
 conditions define the subset of the parameter space in which an attack is operative, and
 Section~\ref{sec:method} applies them to partition the swept library into transmissions
 that capture the receiver and transmissions that do not. Detector performance is reported
@@ -127,8 +126,8 @@ spoofer may possess in general.
 
 These restrictions determine how the results should be interpreted. Each detection failure
 reported in Section~\ref{sec:results} is obtained against this restricted adversary, so the
-measured vulnerability is a lower bound on the vulnerability to an adversary that relaxes
-any of them. The fourth restriction additionally fixes the observable consequence measured
+counts given are the fewest such an adversary would produce: relaxing any restriction
+enlarges what the adversary may transmit and can only increase them. The fourth restriction additionally fixes the observable consequence measured
 in Section~\ref{sec:res_nav}: because a common pull-off on all channels is absorbed by the
 clock, the induced error appears in the timing solution, and it is that error which is
 compared against the commanded rate.

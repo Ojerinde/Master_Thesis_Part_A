@@ -22,12 +22,11 @@ receiver operating nominally while the solution it reports is wrong, so the rece
 no internal evidence that anything has occurred and the attack must be identified while it
 is in progress \citep{psiaki2016gnss}. Capturing a receiver that is already tracking
 authentic signals is correspondingly more demanding than simply transmitting at higher
-power. The published procedure proceeds in three stages: the counterfeit is first aligned
-with the authentic signal in code phase, carrier phase and Doppler frequency, so that the
-victim's correlator sees a single undistorted peak; its power is then raised slightly above
-the authentic power, typically by a few decibels; and only then is the counterfeit dragged
-away from the authentic signal, carrying the tracking loops with it and moving the reported
-position or time \citep{psiaki2016gnss,kerns2014uav}. A counterfeit that omits the
+power. The published procedure has three stages \citep{psiaki2016gnss,kerns2014uav}. The counterfeit is first aligned with the authentic
+signal in code phase, carrier phase and Doppler frequency, so that the victim's correlator
+sees a single undistorted peak. Its power is then raised slightly above the authentic
+power, typically by a few decibels. Only then is it dragged away, carrying the tracking
+loops with it and moving the reported position or time. A counterfeit that omits the
 alignment stage does not capture the receiver at all, and acts only as interference. The
 consequence is that the attacker's freedom is bounded: not every combination of transmitter
 settings takes over a receiver, and an evaluation that ignores this distinction credits a
@@ -69,9 +68,9 @@ that chooses what to transmit, and the two quantities need not coincide.
 
 This paper evaluates fourteen detectors under attacks that are radio signals and not
 perturbations of a measurement table. A counterfeit GPS L1 C/A waveform is synthesised at
-sample level, summed with authentic recorded samples from the Texas Spoofing Test Battery
-\citep{humphreys2012texbat,humphreys2016texbatds78}, passed through a model of the receiver
-front end, and tracked by the FGI-GSRx software receiver \citep{fgigsrx}, published by the
+sample level and summed with authentic recorded samples from the Texas Spoofing Test Battery
+\citep{humphreys2012texbat,humphreys2016texbatds78}. The sum is passed through a model of the
+receiver front end and tracked by the FGI-GSRx software receiver \citep{fgigsrx}, published by the
 Finnish Geospatial Research Institute (FGI). The observables
 each detector reads are those the receiver computes while tracking that sum.
 Figure~\ref{fig:geometry} contrasts authentic operation with a spoofing attack, and
@@ -120,10 +119,10 @@ move together with its threshold, so detectors read at different thresholds are 
 comparable. The false alarm rate each detector pays to meet the recall floor is reported
 alongside every result.
 
-Three findings follow. First, ranking on clean data inverts under transmitted attack: the
+Three findings follow. First, ranking on clean data inverts under transmitted attack. The
 random forest attains the highest clean $F_1$ score, the harmonic mean of precision and
-recall, and the lowest false alarm rate, yet fails to flag 55 of the 126 transmitted attacks
-that capture the receiver, flagging as few as 0.1 percent of the spoofed samples of one of
+recall, and it also pays the lowest false alarm rate. It nonetheless fails to flag 55 of the
+126 transmitted attacks that capture the receiver, flagging as few as 0.1 percent of the spoofed samples of one of
 them. Second, the detectors that flag every attack achieve this only by flagging 46 to 74
 percent of authentic data, a regime in which a receiver would alarm almost continuously, so
 their apparent resistance is not operationally available. Across all fourteen, false alarm

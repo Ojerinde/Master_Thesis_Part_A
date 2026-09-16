@@ -17,8 +17,8 @@ floor, this cannot be attributed to differences in threshold placement, and beca
 attacks were selected without reference to any detector, it cannot be attributed to
 adversarial optimisation against a particular model.
 
-The relationship is a contrast between groups and not a monotone trend across
-architectures. Section~\ref{sec:res_stats} reports a Spearman correlation of $+0.41$
+What the data support is a difference between two groups of detectors, and not a steady
+trend running across all fourteen. Section~\ref{sec:res_stats} reports a Spearman correlation of $+0.41$
 between clean $F_1$ and evaded fraction which is not significant at $n = 14$, because the
 support vector machine combines the worst clean score with the second highest evasion
 count. Both results are reported, and the contrast is the one the
@@ -108,8 +108,8 @@ are the inputs to such a scheme and not a substitute for it.
 \subsection{Scope and limitations}
 
 The adversary is restricted in the four respects set out in Section~\ref{sec:threat}, and
-each restriction reduces its capability, so the failure rates reported are a lower bound on
-what an unrestricted adversary could achieve. The power condition illustrates the point.
+each restriction reduces its capability, so the failure rates reported are the fewest an
+unrestricted adversary would achieve and not an estimate of what it would achieve. The power condition illustrates the point.
 Requiring the counterfeit to exceed the authentic signal follows the established account
 of capture, and it is one of the two conditions, with the code being dragged, that select
 126 of the 209 swept settings as operative. Capture at lower power has since been reported by other means
@@ -144,9 +144,9 @@ is paid for on authentic data.
 
 Two directions remain open. The first is to require the detector to respect a physical
 relation that authentic signals satisfy, as has been done for code carrier consistency
-\citep{song2026generalized}; the library of transmitted attacks constructed here supplies
-the signals against which such a detector would need to be evaluated, including the
-settings that hold received power constant through Equation~\ref{eq:neutral}. The second is
+\citep{song2026generalized}. The library of transmitted attacks constructed here supplies
+the signals such a detector would have to be evaluated against, including the settings
+that hold received power constant through Equation~\ref{eq:neutral}. The second is
 to construct a detector whose behaviour under bounded input change can be certified in
 advance and not estimated afterwards \citep{cohen2019certified}. Both lie outside
 the scope of the present study, which characterises the behaviour of existing detectors.
