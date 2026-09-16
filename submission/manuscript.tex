@@ -270,6 +270,18 @@ measurements of a genuine signal: the code and carrier observables of one satell
 the same changing geometric range and must therefore evolve together, so a counterfeit
 that displaces one without the other violates the relation \citep{psiaki2016gnss}.
 
+How much of the adversary's parameter space these tests actually cover has itself been
+measured, and the answer is not all of it. The detection rate of signal quality monitoring
+metrics falls for particular combinations of counterfeit code phase and carrier phase, and
+metrics formed from several correlator offsets have been proposed to widen that coverage,
+reaching a reported 96.1 percent across those combinations \citep{wu2025musd}. Reading the
+correlator output as an eye diagram is reported to increase coverage by more than 60
+percent over signal quality monitoring and carrier-to-noise density tests
+\citep{wu2025eyediagram}. What a classical test achieves therefore depends on where in its
+parameter space the spoofer chooses to operate. The present paper asks the same question of
+learned detectors, and asks it of transmissions that satisfy the conditions for capturing a
+receiver.
+
 These tests are complementary in the sense that no one of them subsumes another, and a
 receiver running several raises the cost of a successful attack. They nonetheless share a
 structural property. Each is defined by a single named physical signature, which is what
