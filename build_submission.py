@@ -29,6 +29,49 @@ def inline(main_text):
     return re.sub(re.escape(BS) + r"input\{([^}]*)\}", repl, main_text)
 
 
+REVIEW_NOTE = "Removed for double-anonymous review; see title page."
+
+
+def blind(text):
+    """Strip everything that identifies the authors.
+
+    The journal is reviewed double-anonymous, so the manuscript carries no
+    author block, no affiliations and no acknowledgements. Those details go on
+    title_page.tex, which is uploaded as a separate file. Without this step the
+    package would be built straight from main.tex, which does carry them, and an
+    un-anonymised manuscript would go to the editor. That happened once.
+    """
+    before = text
+
+    # Author and affiliation block: everything between the title and abstract.
+    text = re.sub(
+        re.escape(BS) + r"author\*?\[\d+\]\{.*?\n", "", text)
+    text = re.sub(
+        re.escape(BS) + r"affil\*?\[\d+\]\{.*?\n", "", text)
+
+    # Acknowledgements and contributions name people; the body of each goes.
+    for head in ("Authors' contributions", "Acknowledgements"):
+        pat = (re.escape(BS) + r"bmhead\{" + re.escape(head) + r"\}\n"
+               r"(?:(?!" + re.escape(BS) + r"bmhead|" + re.escape(BS) + r"bibliography).*\n)*")
+        # Lambda, not a replacement string: re.sub reads a backslash-b in a
+        # replacement as a backspace character and would emit "mhead".
+        repl = BS + "bmhead{" + head + "}\n" + REVIEW_NOTE + "\n\n"
+        text = re.sub(pat, lambda _m, r=repl: r, text)
+
+    if text == before:
+        sys.exit("blinding changed nothing; check main.tex still has an author block")
+
+    leaks = []
+    for probe in ("Ojerinde", "Akande", "Ahmed", "RCSSTEAP", "buaa.edu.cn",
+                  "J.S.O.", "W.A.A.", "A.O.A.", "Beihang"):
+        if probe in text:
+            leaks.append(probe)
+    if leaks:
+        sys.exit("manuscript still names the authors: " + ", ".join(leaks))
+    print("blinded: no author block, no affiliations, no acknowledgements")
+    return text
+
+
 def main():
     os.makedirs(SUB, exist_ok=True)
 
@@ -47,6 +90,8 @@ def main():
     # Internal notes to ourselves are not part of the submission.
     text = re.sub(r"^%.*(?:Figure source|figures_src|sync\.py|Do not edit).*\n", "",
                   text, flags=re.M)
+
+    text = blind(text)
 
     out = os.path.join(SUB, "manuscript.tex")
     open(out, "w", encoding="utf-8").write(text)
