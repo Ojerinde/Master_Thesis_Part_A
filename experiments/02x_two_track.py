@@ -87,10 +87,17 @@ def set_seed(s):
 
 
 def train_once(net, Xtr, ytr, Xva, yva, cfg, device):
-    pos_weight = torch.tensor([(ytr == 0).sum() / max(1, (ytr == 1).sum())],
-                              dtype=torch.float32, device=device)
-    crit = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
+    # This loop is a deliberate copy of the one in models/deep_learning/*.py
+    # that produced the published epoch-level results: unweighted
+    # BCEWithLogitsLoss, Adam at the configured rate, ReduceLROnPlateau on the
+    # validation loss, and early stopping on any improvement in that loss.
+    # Deviating from it, for instance by adding a positive-class weight or
+    # dropping the scheduler, changes the epoch-track numbers and makes the
+    # two tracks incomparable with the published run.
+    crit = nn.BCEWithLogitsLoss()
     opt = torch.optim.Adam(net.parameters(), lr=cfg["learning_rate"])
+    sched = torch.optim.lr_scheduler.ReduceLROnPlateau(
+        opt, factor=0.5, patience=5, min_lr=1e-7)
 
     def mk(X, y, sh):
         return DataLoader(TensorDataset(torch.tensor(X, dtype=torch.float32),
@@ -110,7 +117,8 @@ def train_once(net, Xtr, ytr, Xva, yva, cfg, device):
                 xb, yb = xb.to(device), yb.to(device)
                 tot += crit(net(xb), yb).item() * len(yb); n += len(yb)
         v = tot / max(1, n)
-        if v < best - 1e-5:
+        sched.step(v)
+        if v < best:
             best, bad = v, 0
             best_state = {k: t.detach().cpu().clone() for k, t in net.state_dict().items()}
         else:
